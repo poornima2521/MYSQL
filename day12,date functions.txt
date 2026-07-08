@@ -1,0 +1,389 @@
+Date functions:
+===============
+mysql> -- curdate():- returns the currentdate date yyyy-mm-dd
+mysql> select curdate() as cur_date;
++------------+
+| cur_date   |
++------------+
+| 2026-07-06 |
++------------+
+1 row in set (0.01 sec)
+
+mysql> -- curtime() :-retuns current time
+mysql> select curtime() as cur_time;
++----------+
+| cur_time |
++----------+
+| 20:09:06 |
++----------+
+1 row in set (0.00 sec)
+
+mysql> -- now() :- retuns the current date and time
+mysql> select now() as current_date_time;
++---------------------+
+| current_date_time   |
++---------------------+
+| 2026-07-06 20:09:55 |
++---------------------+
+1 row in set (0.00 sec)
+
+mysql> -- date(): extract date part
+mysql> select date('2024-11-28 14-32-45')as extracted_date;
++----------------+
+| extracted_date |
++----------------+
+| 2024-11-28     |
++----------------+
+1 row in set, 1 warning (0.01 sec)
+
+mysql> -- time(): extract time
+mysql> select time(now())as extracted_time;
++----------------+
+| extracted_time |
++----------------+
+| 20:12:26       |
++----------------+
+1 row in set (0.00 sec)
+
+MySQL:-- year()
+mysql> select year(now())as extracted_year;
++----------------+
+| extracted_year |
++----------------+
+|           2026 |
++----------------+
+1 row in set (0.00 sec)
+
+mysql> -- month()
+mysql> select month(now())as extracted_month;
++-----------------+
+| extracted_month |
++-----------------+
+|               7 |
++-----------------+
+1 row in set (0.00 sec)
+
+mysql> select day(now())as extracted_day;
++---------------+
+| extracted_day |
++---------------+
+|             6 |
++---------------+
+1 row in set (0.00 sec)
+
+mysql> -- day() or dayofmonth(): returns the day of the month
+mysql> select week(now())as week_now;
++----------+
+| week_now |
++----------+
+|       27 |
++----------+
+1 row in set (0.00 sec)
+
+mysql> -- dayofweek() :- returns the day of week(1-7)
+mysql> select dayofweek(now())as day_of_week;
++-------------+
+| day_of_week |
++-------------+
+|           2 |
++-------------+
+1 row in set (0.00 sec)
+
+mysql> select dayofmonth(now())as day_of_month;
++--------------+
+| day_of_month |
++--------------+
+|            6 |
++--------------+
+1 row in set (0.00 sec)
+
+mysql> -- date_add()
+mysql> select date_add(now(),interval 20 day)as new_date;
++---------------------+
+| new_date            |
++---------------------+
+| 2026-07-26 20:35:29 |
++---------------------+
+1 row in set (0.00 sec)
+
+mysql> select date_add(now(),interval 100 day)as new_date;
++---------------------+
+| new_date            |
++---------------------+
+| 2026-10-14 20:35:51 |
++---------------------+
+1 row in set (0.00 sec)
+
+mysql> select date_sub(now(),interval 30 day)as new_date;
++---------------------+
+| new_date            |
++---------------------+
+| 2026-06-06 20:36:35 |
++---------------------+
+1 row in set (0.00 sec)
+
+mysql> select datediff(now(),'2000-05-23')as days_diff;
++-----------+
+| days_diff |
++-----------+
+|      9540 |
++-----------+
+1 row in set (0.01 sec)
+
+mysql> select last_day(now())as last_day_of_month;
++-------------------+
+| last_day_of_month |
++-------------------+
+| 2026-07-31        |
++-------------------+
+1 row in set (0.00 sec)
+
+mysql> select makedate(2026,60)as result_date;
++-------------+
+| result_date |
++-------------+
+| 2026-03-01  |
++-------------+
+1 row in set (0.00 sec)
+
+mysql> select maketime('18,24,45')as result_time;
+ERROR 1582 (42000): Incorrect parameter count in the call to native function 'maketime'
+mysql> select make_time('18,24,45')as result_time;
+ERROR 1305 (42000): FUNCTION da3.make_time does not exist
+mysql> select maketime(18,24,45)as result_time;
++-------------+
+| result_time |
++-------------+
+| 18:24:45    |
++-------------+
+1 row in set (0.00 sec)
+
+mysql> select monthname(now())as month_name;
++------------+
+| month_name |
++------------+
+| July       |
++------------+
+1 row in set (0.01 sec)
+
+mysql> select dayname(now())as day_name;
++----------+
+| day_name |
++----------+
+| Monday   |
++----------+
+1 row in set (0.00 sec)
+
+mysql> select sec_to_time(3661)as time_value;
++------------+
+| time_value |
++------------+
+| 01:01:01   |
++------------+
+1 row in set (0.01 sec)
+
+
+mysql> select time_to_sec('01:01:01')as total_seconds;
++---------------+
+| total_seconds |
++---------------+
+|          3661 |
++---------------+
+1 row in set (0.00 sec)
+
+mysql> select sysdate() as syatem_date;
++---------------------+
+| syatem_date         |
++---------------------+
+| 2026-07-06 20:47:14 |
++---------------------+
+1 row in set (0.00 sec)
+
+mysql>
+
+1. display employees who joined in the current year
+2.display employees born in November
+3.display employees whose joining in the month is June
+4.display employees whose birthday falls on the 10th day
+5.display employees who joined in the quarter 2
+6.display employee names and their age in years(use timestamdiff())
+7.display employees who have completed more than 3 years in the company
+8.display employees names and their total working hours
+9.display employees names and working minutes
+10 display employees whose  login time  is before 9am
+11.display employees who logged in after 9:10 am.
+12.display employees whose joining date falls on Monday
+13.display employees whose birth month name starts with 'j')
+14.display employees who joined in week niumber25
+15.display employees names and the last day of their birth month
+16.display employees names with joining date after adding one year
+17.display employees names with joining date  before subtracting two months
+18.display employees whose login and logout happened on the same date
+
+
+Set Operators:
+=============
+1.Union
+--------
+combines results from two queries and remove duplicate rows. columns must have the same number and type
+
+2.union all
+-------------
+combines results from two quires including duplicate rows. Columns must have the same number and type
+
+3.Intersect
+--------------
+returns the rows that are common to both quires  columns must have the same number and type
+note: MySQL does not support intersect directly
+
+4.minus
+----------
+returns the rows from the first query that are not present in the second query. Columns must have the same number and type
+note: MySQL does not support minus directly.
+ 
+
+
+mysql> -- Insert sample data into Course table
+mysql> INSERT INTO Course (course_id, course_name, instructor) VALUES
+    -> (1, 'Mathematics', 'Dr. Smith'),
+    -> (2, 'Physics', 'Dr. Johnson'),
+    -> (3, 'Chemistry', 'Dr. Brown'),
+    -> (4, 'Biology', 'Dr. Lee'),
+    -> (5, 'History', 'Dr. Martin');
+Query OK, 5 rows affected (0.01 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> select*from Course;
++-----------+-------------+-------------+
+| course_id | course_name | instructor  |
++-----------+-------------+-------------+
+|         1 | Mathematics | Dr. Smith   |
+|         2 | Physics     | Dr. Johnson |
+|         3 | Chemistry   | Dr. Brown   |
+|         4 | Biology     | Dr. Lee     |
+|         5 | History     | Dr. Martin  |
++-----------+-------------+-------------+
+5 rows in set (0.00 sec)
+
+mysql> -- Create another table for SET operations
+mysql> CREATE TABLE Course_Completed (
+    ->  course_id INT,
+    ->  course_name VARCHAR(100),
+    ->  instructor VARCHAR(100)
+    -> );
+Query OK, 0 rows affected (0.06 sec)
+
+mysql> -- Insert sample data into Course_Completed table
+mysql> INSERT INTO Course_Completed (course_id, course_name, instructor) VALUES
+    -> (2, 'Physics', 'Dr. Johnson'),
+    -> (3, 'Chemistry', 'Dr. Brown'),
+    -> (6, 'Computer Science', 'Dr. Walker'),
+    -> (7, 'Art', 'Dr. Scott');
+Query OK, 4 rows affected (0.01 sec)
+Records: 4  Duplicates: 0  Warnings: 0
+
+mysql> select*from Course_Completed;
++-----------+------------------+-------------+
+| course_id | course_name      | instructor  |
++-----------+------------------+-------------+
+|         2 | Physics          | Dr. Johnson |
+|         3 | Chemistry        | Dr. Brown   |
+|         6 | Computer Science | Dr. Walker  |
+|         7 | Art              | Dr. Scott   |
++-----------+------------------+-------------+
+4 rows in set (0.00 sec)
+mysql>-- combine instructer names from both tables removing duplicates
+mysql> -- combine course names from both tables removing duplicates
+mysql> select course_name from course_completed;
++------------------+
+| course_name      |
++------------------+
+| Physics          |
+| Chemistry        |
+| Computer Science |
+| Art              |
++------------------+
+4 rows in set (0.00 sec)
+
+
+mysql> select course_name from course
+    -> union
+    -> select course_name from course_completed;
++------------------+
+| course_name      |
++------------------+
+| Mathematics      |
+| Physics          |
+| Chemistry        |
+| Biology          |
+| History          |
+| Computer Science |
+| Art              |
++------------------+
+7 rows in set (0.01 sec)
+
+mysql> -- combine instructer names from both tables removing duplicates
+mysql>
+mysql> -- combine course name sfrom both table including duplicates
+mysql> select course_name from course
+    -> union all
+    -> select course_name from course_completed;
++------------------+
+| course_name      |
++------------------+
+| Mathematics      |
+| Physics          |
+| Chemistry        |
+| Biology          |
+| History          |
+| Physics          |
+| Chemistry        |
+| Computer Science |
+| Art              |
++------------------+
+9 rows in set (0.01 sec)
+
+mysql> -- combining instructor names from both tables including duplicates
+mysql> select instructor
+    -> from course
+    -> union all
+    -> select instructor
+    -> from course_completed;
++-------------+
+| instructor  |
++-------------+
+| Dr. Smith   |
+| Dr. Johnson |
+| Dr. Brown   |
+| Dr. Lee     |
+| Dr. Martin  |
+| Dr. Johnson |
+| Dr. Brown   |
+| Dr. Walker  |
+| Dr. Scott   |
++-------------+
+9 rows in set (0.00 sec)
+
+Joins:(6 Types)(4 types are recommended)
+-------
+1.inner join(common records are coming)or(matched records from both tables)
+2.left join( matched records + unmatched records from left table)
+3.right join(matched records+ unmatched records from right table)
+4.full join( matched records+ unmatched records from left table and unmatched records from right table)
+5.cross join(perform cartesion product) or (table1 one every column mapped with table2 every column) 
+6.self join(perform operations on single tables)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
