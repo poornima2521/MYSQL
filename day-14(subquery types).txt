@@ -1,0 +1,1308 @@
+what is subquery or nested query?
+a subquery is a query inside another query.
+it is written inside parenthesis() and its result is used by the outer query.
+
+it is also called as  inner query, nested query, inner select.
+
+general syntax
+---------------
+select column-list
+from table
+where column operator(select column from table where condition )
+
+purpose of subquery
+-------------------
+to breakdown complex problems into smaller queries
+to use the result of one query as input to another .
+to avoid multiple steps.( write a single query instead of temp tables)
+
+Types of subqueries
+-------------------
+1.single-row-subquery
+2.multi-row-subquery
+3.multi-row-subquery with all
+4.nested subquery
+5.corelated subquery
+6.exists/non-exists subquery
+
+
+1.single-row-subquery
+-------------------------
+it returns exactly one row and one column. They use comparison operator like =,<,>,<=,>=,!=
+
+characters
+--------------
+returns only one value.
+can use single value comparison operators.
+if subquery returns no. of rows or multiple rows it causes error.
+
+syntax
+---------
+select columns
+from table
+where column operator(select column from table where condition);
+
+1.employees with salary greater than average salary.
+
+2.multi-row-subquery with (any/some)
+-----------------------------------
+it retunes multiple rows when using any or some the condition is true if it matches at least one value returns by the subquery.
+
+character sticks
+----------------
+retunes multiple values
+any and some are interchangeable 
+condition is true if any of the values satisfy the condition
+often used with in,>any,<any,<=any,>=any...…………..etc
+syntax
+----------
+select columns from table
+where column operator any/some(select columns from table where condition);
+
+3.multi-row-subquery with all
+----------------------------------
+the all operator means the condition must be true for all values returned by the subquery.
+
+character sticks
+----------------
+condition must be true for all values in the subquery result
+often used with>all,<all,>=all,<=all
+>all means greater than maximum value
+<all means less than maximum value
+
+syntax:
+-------
+select columns
+from table
+where column operator all(select column from table where condition );
+
+4.nested subquery
+------------------
+nested subqueries are subqueries with in subqueries. they can be multiple levels deep and are executed from the innermost to the outermost.
+
+character sticks
+-----------------
+multiple levels of nesting
+inner quires execute first
+can combine different types of subqueries
+useful for handling complex conditions.
+syntax
+-----------
+select column-list
+from table
+where column=(select column
+		from table
+		   where column=(select column
+				 from table
+				  where condition));
+
+5.corelated subquery
+---------------------
+these are subqueries that reference columns from the outer query.
+unlike regular subqueries that execute once. Corelated subqueries executes once for each row processed by the outer query.
+(or)
+A corelated subquery is a subquery that depends on the outer query.it executes once for each row returned by the outer query.
+character sticks
+-----------------
+reference columns from the outer query. Or depends on the outer query
+executes multiple times(once per outer row).
+cannot be executed independently.
+often used with exits, not exists.
+generally slower than non-corelated subquery
+uses alies to refer to the outer query.
+
+syntax
+---------
+select column
+from table1 outer_alies
+where condition(select column
+		from table 2 inner alies
+			where inner_alies.column=ouer_alies.column);
+
+6.exists/non-exists subquery
+------------------------------
+exits is used to test whether a subquery returns any rows.it returns true if the subquery returns at least one row ,(otherwise it retuns false)false otherwise not exists returns true if the subquery retunes no rows.
+
+characteristics
+--------------
+retune true/false(Boolean result)
+more efficient that in for larger data sets
+often used with corelated subqueries
+stops execution as soon as the first match is found
+select clause in exits does not matter(often use select 1)
+
+syntax
+------
+exits
+-------
+select columns
+from table1
+where exits(select 1 from table2 where condition).
+
+not-exits
+----------
+select columns from table1
+where notexits(select 1 from table2 where condition).
+
+
+practical
+-------------
+Enter password: ****
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 22
+Server version: 8.0.46 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2026, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
+4 rows in set (0.20 sec)
+
+mysql> use mysql;
+Database changed
+mysql> select*from employees;
++--------+---------+---------------+----------+
+| emp_id | name    | department_id | salary   |
++--------+---------+---------------+----------+
+|    101 | Arjun   |             1 | 50000.00 |
+|    102 | Bhavana |             2 | 65000.00 |
+|    103 | Charan  |             2 | 72000.00 |
+|    104 | Divya   |             3 | 45000.00 |
+|    105 | Eswar   |          NULL | 40000.00 |
+|    106 | Farhan  |             4 | 55000.00 |
+|    107 | Gowri   |             2 | 62000.00 |
+|    108 | Harish  |             5 | 48000.00 |
+|    109 | Ishita  |          NULL | 53000.00 |
+|    110 | Jagan   |             3 | 60000.00 |
++--------+---------+---------------+----------+
+10 rows in set (0.00 sec)
+
+mysql> select*from departments;
++---------------+-----------------+
+| department_id | department_name |
++---------------+-----------------+
+|             1 | Human Resources |
+|             2 | Engineering     |
+|             3 | Marketing       |
+|             4 | Finance         |
+|             5 | Operations      |
++---------------+-----------------+
+5 rows in set (0.00 sec)
+
+mysql> select*from projects;
++------------+----------------------+--------+
+| project_id | project_name         | emp_id |
++------------+----------------------+--------+
+|        201 | Website Redesign     |    102 |
+|        202 | Mobile Banking App   |    103 |
+|        203 | Marketing Campaign   |    104 |
+|        204 | Payroll System       |    106 |
+|        205 | Backend Optimization |    107 |
+|        206 | Cloud Migration      |    102 |
+|        207 | Customer Analytics   |    110 |
+|        208 | Inventory System     |   NULL |
++------------+----------------------+--------+
+8 rows in set (0.00 sec)
+
+mysql> select e.name,e.department_name,e.salary
+    -> from employees e
+    -> join departments d
+    -> on e.department_id=d.department_id
+    -> order by e.salary desc;
+ERROR 1054 (42S22): Unknown column 'e.department_name' in 'field list'
+mysql> select e.name,d.department_name,e.salary
+    -> from employees e
+    -> join departments d
+    -> on e.department_id=d.department_id
+    -> order by e.salary desc;
++---------+-----------------+----------+
+| name    | department_name | salary   |
++---------+-----------------+----------+
+| Charan  | Engineering     | 72000.00 |
+| Bhavana | Engineering     | 65000.00 |
+| Gowri   | Engineering     | 62000.00 |
+| Jagan   | Marketing       | 60000.00 |
+| Farhan  | Finance         | 55000.00 |
+| Arjun   | Human Resources | 50000.00 |
+| Harish  | Operations      | 48000.00 |
+| Divya   | Marketing       | 45000.00 |
++---------+-----------------+----------+
+8 rows in set (0.00 sec)
+
+mysql> select e.name,p.project_name
+    -> from employees e
+    -> join projects p
+    -> on e.emp_id=p.emp_id
+    -> order by e.name;
++---------+----------------------+
+| name    | project_name         |
++---------+----------------------+
+| Bhavana | Website Redesign     |
+| Bhavana | Cloud Migration      |
+| Charan  | Mobile Banking App   |
+| Divya   | Marketing Campaign   |
+| Farhan  | Payroll System       |
+| Gowri   | Backend Optimization |
+| Jagan   | Customer Analytics   |
++---------+----------------------+
+7 rows in set (0.00 sec)
+
+mysql> select d.department_name,count(e.emp_id)as employee_count
+    -> from departments d
+    -> left join employees e
+    -> on d.department_id = e.department_id
+    -> group by d.department_name
+    -> order by employee_count desc;
++-----------------+----------------+
+| department_name | employee_count |
++-----------------+----------------+
+| Engineering     |              3 |
+| Marketing       |              2 |
+| Human Resources |              1 |
+| Finance         |              1 |
+| Operations      |              1 |
++-----------------+----------------+
+5 rows in set (0.01 sec)
+
+mysql> select d.department_name,count(e.emp_id)as employee_count
+    -> from departments d
+    -> left join employees e
+    -> on d.department_id = e.department_id
+    -> group by d.department_name
+    -> having employee_count>1
+    -> order by employee_count desc;
++-----------------+----------------+
+| department_name | employee_count |
++-----------------+----------------+
+| Engineering     |              3 |
+| Marketing       |              2 |
++-----------------+----------------+
+2 rows in set (0.00 sec)
+
+mysql> select d.department_name,count(e.emp_id)as employee_count
+    -> from departments d
+    -> left join employees e
+    -> on d.department_id = e.department_id
+    -> group by d.department_name
+    -> having employee_count>1
+    -> order by employee_count;
++-----------------+----------------+
+| department_name | employee_count |
++-----------------+----------------+
+| Marketing       |              2 |
+| Engineering     |              3 |
++-----------------+----------------+
+2 rows in set (0.00 sec)
+
+mysql> select e.name,count(p.project_id)as project_count
+    -> from employees e
+    -> join projects p on e.emp_id=p.emp_id
+    -> group by e.name
+    -> having project_count>1
+    -> order by project_count desc;
++---------+---------------+
+| name    | project_count |
++---------+---------------+
+| Bhavana |             2 |
++---------+---------------+
+1 row in set (0.00 sec)
+
+mysql> -- 3. departments with total salary >50000,ordered by total salary
+mysql> select department_name,sum(salary)as total_salry
+    -> ^C
+mysql> select department_name,sum(salary)as total_salary
+    -> from departments
+    -> join employees on departments.id=employees.department_id
+    -> group by department_name
+    -> having sum(salary)>50000
+    -> order by total_salary;
+ERROR 1054 (42S22): Unknown column 'departments.id' in 'on clause'
+mysql> select department_name,sum(salary)as total_salary
+    -> from departments
+    -> join employees e on d.department_id=e.department_id
+    -> group by d.department_name
+    -> having total_salary>50000
+    -> order by total_salary desc;
+ERROR 1054 (42S22): Unknown column 'd.department_id' in 'on clause'
+mysql> -- qureis and subquries,joins (imp)
+mysql> -- Department Table
+mysql> CREATE TABLE Department (
+    ->     dept_id INT PRIMARY KEY,
+    ->     dept_name VARCHAR(50),
+    ->     location VARCHAR(50)
+    -> );
+Query OK, 0 rows affected (0.22 sec)
+
+mysql> -- Employee Table
+mysql> CREATE TABLE Employee (
+    ->     emp_id INT PRIMARY KEY,
+    ->     emp_name VARCHAR(50),
+    ->     salary DECIMAL(10,2),
+    ->     dept_id INT,
+    ->     job VARCHAR(50),
+    ->     hire_date DATE,
+    ->     FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
+    -> );
+Query OK, 0 rows affected (0.09 sec)
+
+mysql> -- Departments
+mysql> INSERT INTO Department VALUES
+    -> (1, 'HR', 'Hyderabad'),
+    -> (2, 'IT', 'Bangalore'),
+    -> (3, 'Finance', 'Mumbai'),
+    -> (4, 'Marketing', 'Delhi');
+Query OK, 4 rows affected (2.71 sec)
+Records: 4  Duplicates: 0  Warnings: 0
+
+mysql> -- Employees
+mysql> INSERT INTO Employee VALUES
+    -> (101, 'Amit', 60000, 2, 'Developer', '2021-06-12'),
+    -> (102, 'Ravi', 75000, 2, 'Manager', '2020-03-15'),
+    -> (103, 'Sneha', 55000, 1, 'HR Executive', '2022-01-20'),
+    -> (104, 'Priya', 90000, 3, 'Accountant', '2019-07-10'),
+    -> (105, 'Vikas', 50000, 4, 'Sales Exec', '2022-05-30'),
+    -> (106, 'Anjali', 80000, 2, 'Developer', '2021-08-25'),
+    -> (107, 'Manoj', 95000, 3, 'Manager', '2018-11-05');
+Query OK, 7 rows affected (0.03 sec)
+Records: 7  Duplicates: 0  Warnings: 0
+
+mysql>
+mysql> -- Projects
+mysql> INSERT INTO Project VALUES
+    -> (201, 'ERP System', 2, 1500000),
+    -> (202, 'Recruitment Drive', 1, 300000),
+    -> (203, 'Annual Report', 3, 500000),
+    -> (204, 'Ad Campaign', 4, 700000),
+    -> (205, 'Mobile App', 2, 1200000);
+ERROR 1146 (42S02): Table 'mysql.project' doesn't exist
+mysql> select*from employee;
++--------+----------+----------+---------+--------------+------------+
+| emp_id | emp_name | salary   | dept_id | job          | hire_date  |
++--------+----------+----------+---------+--------------+------------+
+|    101 | Amit     | 60000.00 |       2 | Developer    | 2021-06-12 |
+|    102 | Ravi     | 75000.00 |       2 | Manager      | 2020-03-15 |
+|    103 | Sneha    | 55000.00 |       1 | HR Executive | 2022-01-20 |
+|    104 | Priya    | 90000.00 |       3 | Accountant   | 2019-07-10 |
+|    105 | Vikas    | 50000.00 |       4 | Sales Exec   | 2022-05-30 |
+|    106 | Anjali   | 80000.00 |       2 | Developer    | 2021-08-25 |
+|    107 | Manoj    | 95000.00 |       3 | Manager      | 2018-11-05 |
++--------+----------+----------+---------+--------------+------------+
+7 rows in set (0.02 sec)
+
+mysql> select*from department;
++---------+-----------+-----------+
+| dept_id | dept_name | location  |
++---------+-----------+-----------+
+|       1 | HR        | Hyderabad |
+|       2 | IT        | Bangalore |
+|       3 | Finance   | Mumbai    |
+|       4 | Marketing | Delhi     |
++---------+-----------+-----------+
+4 rows in set (0.00 sec)
+
+mysql> -- Project Table
+mysql> CREATE TABLE Project (
+    ->     proj_id INT PRIMARY KEY,
+    ->     proj_name VARCHAR(50),
+    ->     dept_id INT,
+    ->     budget DECIMAL(12,2),
+    ->     FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
+    -> );
+Query OK, 0 rows affected (0.20 sec)
+
+mysql> -- Projects
+mysql> INSERT INTO Project VALUES
+    -> (201, 'ERP System', 2, 1500000),
+    -> (202, 'Recruitment Drive', 1, 300000),
+    -> (203, 'Annual Report', 3, 500000),
+    -> (204, 'Ad Campaign', 4, 700000),
+    -> (205, 'Mobile App', 2, 1200000);
+Query OK, 5 rows affected (0.02 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> select*from project;
++---------+-------------------+---------+------------+
+| proj_id | proj_name         | dept_id | budget     |
++---------+-------------------+---------+------------+
+|     201 | ERP System        |       2 | 1500000.00 |
+|     202 | Recruitment Drive |       1 |  300000.00 |
+|     203 | Annual Report     |       3 |  500000.00 |
+|     204 | Ad Campaign       |       4 |  700000.00 |
+|     205 | Mobile App        |       2 | 1200000.00 |
++---------+-------------------+---------+------------+
+5 rows in set (0.00 sec)
+
+mysql> CREATE TABLE country (
+    ->     Code            VARCHAR(3) PRIMARY KEY,
+    ->     Name            VARCHAR(100) NOT NULL,
+    ->     Continent       VARCHAR(30)  NOT NULL,
+    ->     Region          VARCHAR(50)  NOT NULL,
+    ->     Population      BIGINT       NOT NULL,
+    ->     LifeExpectancy  DECIMAL(4,1),
+    ->     GNP             DECIMAL(15,2),
+    ->     Capital         INT
+    -> );
+Query OK, 0 rows affected (0.06 sec)
+
+mysql> CREATE TABLE city (
+    ->     ID           INT PRIMARY KEY AUTO_INCREMENT,
+    ->     Name         VARCHAR(100) NOT NULL,
+    ->     CountryCode  VARCHAR(3)   NOT NULL,
+    ->     District     VARCHAR(50),
+    ->     Population   BIGINT       NOT NULL
+    -> );
+Query OK, 0 rows affected (0.07 sec)
+
+mysql> CREATE TABLE countrylanguage (
+    ->     CountryCode  VARCHAR(3)  NOT NULL,
+    ->     Language     VARCHAR(50) NOT NULL,
+    ->     IsOfficial   ENUM('T','F') NOT NULL,
+    ->     Percentage   DECIMAL(4,1)
+    -> );
+Query OK, 0 rows affected (0.07 sec)
+
+mysql> -- 2. INSERT RECORDS INTO city (95 rows) — insert BEFORE country, since
+mysql> --    country.Capital references city.ID
+mysql>
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (1,'Berlin','DEU','Berlin',3677000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (2,'Hamburg','DEU','Hamburg',1900000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (3,'Munich','DEU','Bavaria',1500000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (4,'Paris','FRA','Ile-de-France',2140000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (5,'Marseille','FRA','PACA',870000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (6,'Lyon','FRA','Auvergne-Rhone-Alpes',520000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (7,'London','GBR','England',8980000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (8,'Birmingham','GBR','England',1145000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (9,'Manchester','GBR','England',553000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (10,'Rome','ITA','Lazio',2870000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (11,'Milan','ITA','Lombardy',1370000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (12,'Naples','ITA','Campania',950000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (13,'Madrid','ESP','Madrid',3280000);
+Query OK, 1 row affected (0.03 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (14,'Barcelona','ESP','Catalonia',1620000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (15,'Valencia','ESP','Valencia',800000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (16,'Warsaw','POL','Masovian',1860000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (17,'Krakow','POL','Lesser Poland',780000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (18,'Amsterdam','NLD','North Holland',905000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (19,'Rotterdam','NLD','South Holland',656000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (20,'Brussels','BEL','Brussels',1220000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (21,'Antwerp','BEL','Antwerp',530000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (22,'Stockholm','SWE','Stockholm',980000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (23,'Gothenburg','SWE','Vastra Gotaland',580000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (24,'Lisbon','PRT','Lisbon',545000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (25,'Porto','PRT','Porto',230000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (26,'Athens','GRC','Attica',660000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (27,'Thessaloniki','GRC','Central Macedonia',320000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (28,'Monaco-Ville','MCO','Monaco',1300);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (29,'Abuja','NGA','Federal Capital Territory',1780000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (30,'Lagos','NGA','Lagos',15400000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (31,'Kano','NGA','Kano',4100000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (32,'Cairo','EGY','Cairo',10100000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (33,'Alexandria','EGY','Alexandria',5280000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (34,'Pretoria','ZAF','Gauteng',2470000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (35,'Johannesburg','ZAF','Gauteng',5780000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (36,'Cape Town','ZAF','Western Cape',4710000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (37,'Nairobi','KEN','Nairobi',4400000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (38,'Mombasa','KEN','Mombasa',1300000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (39,'Addis Ababa','ETH','Addis Ababa',5230000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (40,'Accra','GHA','Greater Accra',2560000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (41,'Kumasi','GHA','Ashanti',3350000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (42,'Rabat','MAR','Rabat-Sale',580000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (43,'Casablanca','MAR','Casablanca-Settat',3750000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (44,'Algiers','DZA','Algiers',2760000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (45,'Oran','DZA','Oran',850000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (46,'Beijing','CHN','Beijing',21890000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (47,'Shanghai','CHN','Shanghai',24870000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (48,'Shenzhen','CHN','Guangdong',17560000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (49,'New Delhi','IND','Delhi',34700000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (50,'Mumbai','IND','Maharashtra',21300000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (51,'Bengaluru','IND','Karnataka',13600000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (52,'Tokyo','JPN','Tokyo',37400000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (53,'Osaka','JPN','Osaka',19100000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (54,'Jakarta','IDN','Jakarta',10900000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (55,'Surabaya','IDN','East Java',2870000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (56,'Islamabad','PAK','Islamabad',1140000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (57,'Karachi','PAK','Sindh',16800000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (58,'Lahore','PAK','Punjab',13000000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (59,'Dhaka','BGD','Dhaka',22400000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (60,'Chittagong','BGD','Chittagong',5200000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (61,'Hanoi','VNM','Hanoi',8400000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (62,'Ho Chi Minh City','VNM','Ho Chi Minh',9300000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (63,'Bangkok','THA','Bangkok',10700000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (64,'Chiang Mai','THA','Chiang Mai',1200000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (65,'Seoul','KOR','Seoul',9500000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (66,'Busan','KOR','Busan',3400000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (67,'Riyadh','SAU','Riyadh',7680000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (68,'Jeddah','SAU','Makkah',4780000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (69,'Washington','USA','District of Columbia',690000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (70,'New York','USA','New York',8800000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (71,'Los Angeles','USA','California',3900000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (72,'Chicago','USA','Illinois',2700000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (73,'Ottawa','CAN','Ontario',1070000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (74,'Toronto','CAN','Ontario',2930000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (75,'Vancouver','CAN','British Columbia',675000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (76,'Mexico City','MEX','Distrito Federal',9200000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (77,'Guadalajara','MEX','Jalisco',1500000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (78,'Brasilia','BRA','Distrito Federal',3100000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (79,'Sao Paulo','BRA','Sao Paulo',12300000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (80,'Rio de Janeiro','BRA','Rio de Janeiro',6750000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (81,'Buenos Aires','ARG','Buenos Aires',3080000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (82,'Cordoba','ARG','Cordoba',1450000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (83,'Bogota','COL','Bogota',7970000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (84,'Medellin','COL','Antioquia',2530000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (85,'Lima','PER','Lima',9700000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (86,'Arequipa','PER','Arequipa',1080000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (87,'Santiago','CHL','Santiago',6270000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (88,'Valparaiso','CHL','Valparaiso',300000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (89,'Caracas','VEN','Distrito Capital',2900000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (90,'Maracaibo','VEN','Zulia',1650000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (91,'Canberra','AUS','Australian Capital Territory',470000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (92,'Sydney','AUS','New South Wales',5310000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (93,'Melbourne','AUS','Victoria',5150000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (94,'Wellington','NZL','Wellington',215000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO city (ID,Name,CountryCode,District,Population) VALUES (95,'Auckland','NZL','Auckland',1700000);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> -- 3. INSERT RECORDS INTO country (41 rows)
+mysql>
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('ARG','Argentina','South America','South America',45800000,76.7,630000.00,81);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('AUS','Australia','Oceania','Australia and New Zealand',26600000,83.3,1690000.00,91);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('BEL','Belgium','Europe','Western Europe',11600000,82.0,590000.00,20);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('BGD','Bangladesh','Asia','Southern and Central Asia',172000000,72.0,460000.00,59);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('BRA','Brazil','South America','South America',216400000,75.9,1920000.00,78);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('CAN','Canada','North America','North America',38900000,82.4,2140000.00,73);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('CHL','Chile','South America','South America',19600000,80.2,317000.00,87);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('CHN','China','Asia','Eastern Asia',1412000000,78.2,17960000.00,46);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('COL','Colombia','South America','South America',52200000,73.0,343000.00,83);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('DEU','Germany','Europe','Western Europe',83200000,81.0,4260000.00,1);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('DZA','Algeria','Africa','Northern Africa',45400000,77.1,195000.00,44);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('EGY','Egypt','Africa','Northern Africa',112700000,71.8,435000.00,32);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('ESP','Spain','Europe','Southern Europe',47400000,83.5,1430000.00,13);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('ETH','Ethiopia','Africa','Eastern Africa',126500000,66.2,126000.00,39);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('FRA','France','Europe','Western Europe',68000000,82.5,2780000.00,4);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('GBR','United Kingdom','Europe','British Isles',67300000,81.2,3130000.00,7);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('GHA','Ghana','Africa','Western Africa',33500000,64.6,77000.00,40);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('GRC','Greece','Europe','Southern Europe',10400000,81.9,210000.00,26);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('IDN','Indonesia','Asia','Southeast Asia',277500000,68.0,1320000.00,54);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('IND','India','Asia','Southern and Central Asia',1428000000,70.2,3730000.00,49);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('ITA','Italy','Europe','Southern Europe',59000000,83.2,2010000.00,10);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('JPN','Japan','Asia','Eastern Asia',123300000,84.5,4230000.00,52);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('KEN','Kenya','Africa','Eastern Africa',55100000,66.7,113000.00,37);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('KOR','South Korea','Asia','Eastern Asia',51700000,83.5,1670000.00,65);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('MAR','Morocco','Africa','Northern Africa',37800000,74.0,135000.00,42);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('MCO','Monaco','Europe','Southern Europe',39000,85.9,7500.00,28);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('MEX','Mexico','North America','Central America',128900000,70.7,1420000.00,76);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('NGA','Nigeria','Africa','Western Africa',223800000,55.8,477000.00,29);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('NLD','Netherlands','Europe','Western Europe',17700000,82.3,990000.00,18);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('NZL','New Zealand','Oceania','Australia and New Zealand',5200000,82.5,250000.00,94);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('PAK','Pakistan','Asia','Southern and Central Asia',240500000,66.6,375000.00,56);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('PER','Peru','South America','South America',34400000,72.9,242000.00,85);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('POL','Poland','Europe','Eastern Europe',37700000,78.0,690000.00,16);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('PRT','Portugal','Europe','Southern Europe',10300000,82.1,250000.00,24);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('SAU','Saudi Arabia','Asia','Middle East',36900000,76.9,1010000.00,67);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('SWE','Sweden','Europe','Nordic Countries',10500000,83.0,590000.00,22);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('THA','Thailand','Asia','Southeast Asia',71800000,79.3,495000.00,63);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('USA','United States','North America','North America',339900000,79.3,25460000.00,69);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('VEN','Venezuela','South America','South America',28300000,72.1,90000.00,89);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('VNM','Vietnam','Asia','Southeast Asia',98900000,73.6,410000.00,61);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO country (Code,Name,Continent,Region,Population,LifeExpectancy,GNP,Capital) VALUES ('ZAF','South Africa','Africa','Southern Africa',60400000,65.3,405000.00,34);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> -- 4. INSERT RECORDS INTO countrylanguage (60 rows)
+mysql>
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ARG','Spanish','T',96.8);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('AUS','English','T',81.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('BEL','French','T',40.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('BEL','Dutch','T',59.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('BGD','Bengali','T',98.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('BRA','Portuguese','T',97.5);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('CAN','English','T',58.7);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('CAN','French','T',22.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('CHL','Spanish','T',99.5);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('CHN','Chinese','T',92.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('COL','Spanish','T',99.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('DEU','German','T',92.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('DZA','Berber languages','T',17.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('DZA','Arabic','T',83.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('EGY','Arabic','T',98.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ESP','Catalan','F',17.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ESP','Spanish','T',74.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ETH','Oromo','F',25.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ETH','Amharic','T',30.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('FRA','French','T',90.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('GBR','English','T',95.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('GHA','English','T',100.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('GRC','Greek','T',99.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('IDN','Indonesian','T',100.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('IND','Bengali','F',8.1);
+Query OK, 1 row affected (0.03 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('IND','Hindi','T',41.0);
+Query OK, 1 row affected (0.02 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('IND','English','T',12.0);
+Query OK, 1 row affected (0.02 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ITA','Italian','T',93.0);
+Query OK, 1 row affected (0.02 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('JPN','Japanese','T',99.1);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('KEN','Swahili','T',60.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('KEN','English','T',20.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('KOR','Korean','T',100.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('MAR','Arabic','T',65.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('MAR','Berber languages','T',28.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('MCO','Monegasque','F',12.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('MCO','French','T',58.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('MEX','Spanish','T',92.7);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('NGA','English','T',100.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('NGA','Hausa','F',25.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('NGA','Yoruba','F',21.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('NLD','Dutch','T',95.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('NZL','English','T',91.2);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('NZL','Maori','T',4.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('PAK','English','T',1.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('PAK','Urdu','T',8.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('PAK','Punjabi','F',48.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('PER','Spanish','T',83.9);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('PER','Quechua','T',13.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('POL','Polish','T',97.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('PRT','Portuguese','T',99.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('SAU','Arabic','T',95.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('SWE','Swedish','T',89.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('THA','Thai','T',97.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('USA','English','T',86.2);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('USA','Spanish','F',9.7);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('VEN','Spanish','T',96.9);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('VNM','Vietnamese','T',87.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ZAF','Afrikaans','T',13.5);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ZAF','English','T',9.6);
+Query OK, 1 row affected (0.01 sec)
+
+mysql> INSERT INTO countrylanguage (CountryCode,Language,IsOfficial,Percentage) VALUES ('ZAF','Zulu','T',23.0);
+Query OK, 1 row affected (0.01 sec)
+
+mysql>
+mysql> select*from city ;
++----+------------------+-------------+------------------------------+------------+
+| ID | Name             | CountryCode | District                     | Population |
++----+------------------+-------------+------------------------------+------------+
+|  1 | Berlin           | DEU         | Berlin                       |    3677000 |
+|  2 | Hamburg          | DEU         | Hamburg                      |    1900000 |
+|  3 | Munich           | DEU         | Bavaria                      |    1500000 |
+|  4 | Paris            | FRA         | Ile-de-France                |    2140000 |
+|  5 | Marseille        | FRA         | PACA                         |     870000 |
+|  6 | Lyon             | FRA         | Auvergne-Rhone-Alpes         |     520000 |
+|  7 | London           | GBR         | England                      |    8980000 |
+|  8 | Birmingham       | GBR         | England                      |    1145000 |
+|  9 | Manchester       | GBR         | England                      |     553000 |
+| 10 | Rome             | ITA         | Lazio                        |    2870000 |
+| 11 | Milan            | ITA         | Lombardy                     |    1370000 |
+| 12 | Naples           | ITA         | Campania                     |     950000 |
+| 13 | Madrid           | ESP         | Madrid                       |    3280000 |
+| 14 | Barcelona        | ESP         | Catalonia                    |    1620000 |
+| 15 | Valencia         | ESP         | Valencia                     |     800000 |
+| 16 | Warsaw           | POL         | Masovian                     |    1860000 |
+| 17 | Krakow           | POL         | Lesser Poland                |     780000 |
+| 18 | Amsterdam        | NLD         | North Holland                |     905000 |
+| 19 | Rotterdam        | NLD         | South Holland                |     656000 |
+| 20 | Brussels         | BEL         | Brussels                     |    1220000 |
+| 21 | Antwerp          | BEL         | Antwerp                      |     530000 |
+| 22 | Stockholm        | SWE         | Stockholm                    |     980000 |
+| 23 | Gothenburg       | SWE         | Vastra Gotaland              |     580000 |
+| 24 | Lisbon           | PRT         | Lisbon                       |     545000 |
+| 25 | Porto            | PRT         | Porto                        |     230000 |
+| 26 | Athens           | GRC         | Attica                       |     660000 |
+| 27 | Thessaloniki     | GRC         | Central Macedonia            |     320000 |
+| 28 | Monaco-Ville     | MCO         | Monaco                       |       1300 |
+| 29 | Abuja            | NGA         | Federal Capital Territory    |    1780000 |
+| 30 | Lagos            | NGA         | Lagos                        |   15400000 |
+| 31 | Kano             | NGA         | Kano                         |    4100000 |
+| 32 | Cairo            | EGY         | Cairo                        |   10100000 |
+| 33 | Alexandria       | EGY         | Alexandria                   |    5280000 |
+| 34 | Pretoria         | ZAF         | Gauteng                      |    2470000 |
+| 35 | Johannesburg     | ZAF         | Gauteng                      |    5780000 |
+| 36 | Cape Town        | ZAF         | Western Cape                 |    4710000 |
+| 37 | Nairobi          | KEN         | Nairobi                      |    4400000 |
+| 38 | Mombasa          | KEN         | Mombasa                      |    1300000 |
+| 39 | Addis Ababa      | ETH         | Addis Ababa                  |    5230000 |
+| 40 | Accra            | GHA         | Greater Accra                |    2560000 |
+| 41 | Kumasi           | GHA         | Ashanti                      |    3350000 |
+| 42 | Rabat            | MAR         | Rabat-Sale                   |     580000 |
+| 43 | Casablanca       | MAR         | Casablanca-Settat            |    3750000 |
+| 44 | Algiers          | DZA         | Algiers                      |    2760000 |
+| 45 | Oran             | DZA         | Oran                         |     850000 |
+| 46 | Beijing          | CHN         | Beijing                      |   21890000 |
+| 47 | Shanghai         | CHN         | Shanghai                     |   24870000 |
+| 48 | Shenzhen         | CHN         | Guangdong                    |   17560000 |
+| 49 | New Delhi        | IND         | Delhi                        |   34700000 |
+| 50 | Mumbai           | IND         | Maharashtra                  |   21300000 |
+| 51 | Bengaluru        | IND         | Karnataka                    |   13600000 |
+| 52 | Tokyo            | JPN         | Tokyo                        |   37400000 |
+| 53 | Osaka            | JPN         | Osaka                        |   19100000 |
+| 54 | Jakarta          | IDN         | Jakarta                      |   10900000 |
+| 55 | Surabaya         | IDN         | East Java                    |    2870000 |
+| 56 | Islamabad        | PAK         | Islamabad                    |    1140000 |
+| 57 | Karachi          | PAK         | Sindh                        |   16800000 |
+| 58 | Lahore           | PAK         | Punjab                       |   13000000 |
+| 59 | Dhaka            | BGD         | Dhaka                        |   22400000 |
+| 60 | Chittagong       | BGD         | Chittagong                   |    5200000 |
+| 61 | Hanoi            | VNM         | Hanoi                        |    8400000 |
+| 62 | Ho Chi Minh City | VNM         | Ho Chi Minh                  |    9300000 |
+| 63 | Bangkok          | THA         | Bangkok                      |   10700000 |
+| 64 | Chiang Mai       | THA         | Chiang Mai                   |    1200000 |
+| 65 | Seoul            | KOR         | Seoul                        |    9500000 |
+| 66 | Busan            | KOR         | Busan                        |    3400000 |
+| 67 | Riyadh           | SAU         | Riyadh                       |    7680000 |
+| 68 | Jeddah           | SAU         | Makkah                       |    4780000 |
+| 69 | Washington       | USA         | District of Columbia         |     690000 |
+| 70 | New York         | USA         | New York                     |    8800000 |
+| 71 | Los Angeles      | USA         | California                   |    3900000 |
+| 72 | Chicago          | USA         | Illinois                     |    2700000 |
+| 73 | Ottawa           | CAN         | Ontario                      |    1070000 |
+| 74 | Toronto          | CAN         | Ontario                      |    2930000 |
+| 75 | Vancouver        | CAN         | British Columbia             |     675000 |
+| 76 | Mexico City      | MEX         | Distrito Federal             |    9200000 |
+| 77 | Guadalajara      | MEX         | Jalisco                      |    1500000 |
+| 78 | Brasilia         | BRA         | Distrito Federal             |    3100000 |
+| 79 | Sao Paulo        | BRA         | Sao Paulo                    |   12300000 |
+| 80 | Rio de Janeiro   | BRA         | Rio de Janeiro               |    6750000 |
+| 81 | Buenos Aires     | ARG         | Buenos Aires                 |    3080000 |
+| 82 | Cordoba          | ARG         | Cordoba                      |    1450000 |
+| 83 | Bogota           | COL         | Bogota                       |    7970000 |
+| 84 | Medellin         | COL         | Antioquia                    |    2530000 |
+| 85 | Lima             | PER         | Lima                         |    9700000 |
+| 86 | Arequipa         | PER         | Arequipa                     |    1080000 |
+| 87 | Santiago         | CHL         | Santiago                     |    6270000 |
+| 88 | Valparaiso       | CHL         | Valparaiso                   |     300000 |
+| 89 | Caracas          | VEN         | Distrito Capital             |    2900000 |
+| 90 | Maracaibo        | VEN         | Zulia                        |    1650000 |
+| 91 | Canberra         | AUS         | Australian Capital Territory |     470000 |
+| 92 | Sydney           | AUS         | New South Wales              |    5310000 |
+| 93 | Melbourne        | AUS         | Victoria                     |    5150000 |
+| 94 | Wellington       | NZL         | Wellington                   |     215000 |
+| 95 | Auckland         | NZL         | Auckland                     |    1700000 |
++----+------------------+-------------+------------------------------+------------+
+95 rows in set (0.00 sec)
+
+mysql> select*from  country;
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+| Code | Name           | Continent     | Region                    | Population | LifeExpectancy | GNP         | Capital |
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+| ARG  | Argentina      | South America | South America             |   45800000 |           76.7 |   630000.00 |      81 |
+| AUS  | Australia      | Oceania       | Australia and New Zealand |   26600000 |           83.3 |  1690000.00 |      91 |
+| BEL  | Belgium        | Europe        | Western Europe            |   11600000 |           82.0 |   590000.00 |      20 |
+| BGD  | Bangladesh     | Asia          | Southern and Central Asia |  172000000 |           72.0 |   460000.00 |      59 |
+| BRA  | Brazil         | South America | South America             |  216400000 |           75.9 |  1920000.00 |      78 |
+| CAN  | Canada         | North America | North America             |   38900000 |           82.4 |  2140000.00 |      73 |
+| CHL  | Chile          | South America | South America             |   19600000 |           80.2 |   317000.00 |      87 |
+| CHN  | China          | Asia          | Eastern Asia              | 1412000000 |           78.2 | 17960000.00 |      46 |
+| COL  | Colombia       | South America | South America             |   52200000 |           73.0 |   343000.00 |      83 |
+| DEU  | Germany        | Europe        | Western Europe            |   83200000 |           81.0 |  4260000.00 |       1 |
+| DZA  | Algeria        | Africa        | Northern Africa           |   45400000 |           77.1 |   195000.00 |      44 |
+| EGY  | Egypt          | Africa        | Northern Africa           |  112700000 |           71.8 |   435000.00 |      32 |
+| ESP  | Spain          | Europe        | Southern Europe           |   47400000 |           83.5 |  1430000.00 |      13 |
+| ETH  | Ethiopia       | Africa        | Eastern Africa            |  126500000 |           66.2 |   126000.00 |      39 |
+| FRA  | France         | Europe        | Western Europe            |   68000000 |           82.5 |  2780000.00 |       4 |
+| GBR  | United Kingdom | Europe        | British Isles             |   67300000 |           81.2 |  3130000.00 |       7 |
+| GHA  | Ghana          | Africa        | Western Africa            |   33500000 |           64.6 |    77000.00 |      40 |
+| GRC  | Greece         | Europe        | Southern Europe           |   10400000 |           81.9 |   210000.00 |      26 |
+| IDN  | Indonesia      | Asia          | Southeast Asia            |  277500000 |           68.0 |  1320000.00 |      54 |
+| IND  | India          | Asia          | Southern and Central Asia | 1428000000 |           70.2 |  3730000.00 |      49 |
+| ITA  | Italy          | Europe        | Southern Europe           |   59000000 |           83.2 |  2010000.00 |      10 |
+| JPN  | Japan          | Asia          | Eastern Asia              |  123300000 |           84.5 |  4230000.00 |      52 |
+| KEN  | Kenya          | Africa        | Eastern Africa            |   55100000 |           66.7 |   113000.00 |      37 |
+| KOR  | South Korea    | Asia          | Eastern Asia              |   51700000 |           83.5 |  1670000.00 |      65 |
+| MAR  | Morocco        | Africa        | Northern Africa           |   37800000 |           74.0 |   135000.00 |      42 |
+| MCO  | Monaco         | Europe        | Southern Europe           |      39000 |           85.9 |     7500.00 |      28 |
+| MEX  | Mexico         | North America | Central America           |  128900000 |           70.7 |  1420000.00 |      76 |
+| NGA  | Nigeria        | Africa        | Western Africa            |  223800000 |           55.8 |   477000.00 |      29 |
+| NLD  | Netherlands    | Europe        | Western Europe            |   17700000 |           82.3 |   990000.00 |      18 |
+| NZL  | New Zealand    | Oceania       | Australia and New Zealand |    5200000 |           82.5 |   250000.00 |      94 |
+| PAK  | Pakistan       | Asia          | Southern and Central Asia |  240500000 |           66.6 |   375000.00 |      56 |
+| PER  | Peru           | South America | South America             |   34400000 |           72.9 |   242000.00 |      85 |
+| POL  | Poland         | Europe        | Eastern Europe            |   37700000 |           78.0 |   690000.00 |      16 |
+| PRT  | Portugal       | Europe        | Southern Europe           |   10300000 |           82.1 |   250000.00 |      24 |
+| SAU  | Saudi Arabia   | Asia          | Middle East               |   36900000 |           76.9 |  1010000.00 |      67 |
+| SWE  | Sweden         | Europe        | Nordic Countries          |   10500000 |           83.0 |   590000.00 |      22 |
+| THA  | Thailand       | Asia          | Southeast Asia            |   71800000 |           79.3 |   495000.00 |      63 |
+| USA  | United States  | North America | North America             |  339900000 |           79.3 | 25460000.00 |      69 |
+| VEN  | Venezuela      | South America | South America             |   28300000 |           72.1 |    90000.00 |      89 |
+| VNM  | Vietnam        | Asia          | Southeast Asia            |   98900000 |           73.6 |   410000.00 |      61 |
+| ZAF  | South Africa   | Africa        | Southern Africa           |   60400000 |           65.3 |   405000.00 |      34 |
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+41 rows in set (0.00 sec)
+
+mysql> select*from  countrylanguage
+    -> ^C
+mysql> select*from  countrylanguage
+    -> ^C
+mysql> select*from  countrylanguage;
++-------------+------------------+------------+------------+
+| CountryCode | Language         | IsOfficial | Percentage |
++-------------+------------------+------------+------------+
+| ARG         | Spanish          | T          |       96.8 |
+| AUS         | English          | T          |       81.0 |
+| BEL         | French           | T          |       40.0 |
+| BEL         | Dutch            | T          |       59.0 |
+| BGD         | Bengali          | T          |       98.0 |
+| BRA         | Portuguese       | T          |       97.5 |
+| CAN         | English          | T          |       58.7 |
+| CAN         | French           | T          |       22.0 |
+| CHL         | Spanish          | T          |       99.5 |
+| CHN         | Chinese          | T          |       92.0 |
+| COL         | Spanish          | T          |       99.0 |
+| DEU         | German           | T          |       92.0 |
+| DZA         | Berber languages | T          |       17.0 |
+| DZA         | Arabic           | T          |       83.0 |
+| EGY         | Arabic           | T          |       98.0 |
+| ESP         | Catalan          | F          |       17.0 |
+| ESP         | Spanish          | T          |       74.0 |
+| ETH         | Oromo            | F          |       25.0 |
+| ETH         | Amharic          | T          |       30.0 |
+| FRA         | French           | T          |       90.0 |
+| GBR         | English          | T          |       95.0 |
+| GHA         | English          | T          |      100.0 |
+| GRC         | Greek            | T          |       99.0 |
+| IDN         | Indonesian       | T          |      100.0 |
+| IND         | Bengali          | F          |        8.1 |
+| IND         | Hindi            | T          |       41.0 |
+| IND         | English          | T          |       12.0 |
+| ITA         | Italian          | T          |       93.0 |
+| JPN         | Japanese         | T          |       99.1 |
+| KEN         | Swahili          | T          |       60.0 |
+| KEN         | English          | T          |       20.0 |
+| KOR         | Korean           | T          |      100.0 |
+| MAR         | Arabic           | T          |       65.0 |
+| MAR         | Berber languages | T          |       28.0 |
+| MCO         | Monegasque       | F          |       12.0 |
+| MCO         | French           | T          |       58.0 |
+| MEX         | Spanish          | T          |       92.7 |
+| NGA         | English          | T          |      100.0 |
+| NGA         | Hausa            | F          |       25.0 |
+| NGA         | Yoruba           | F          |       21.0 |
+| NLD         | Dutch            | T          |       95.0 |
+| NZL         | English          | T          |       91.2 |
+| NZL         | Maori            | T          |        4.0 |
+| PAK         | English          | T          |        1.0 |
+| PAK         | Urdu             | T          |        8.0 |
+| PAK         | Punjabi          | F          |       48.0 |
+| PER         | Spanish          | T          |       83.9 |
+| PER         | Quechua          | T          |       13.0 |
+| POL         | Polish           | T          |       97.0 |
+| PRT         | Portuguese       | T          |       99.0 |
+| SAU         | Arabic           | T          |       95.0 |
+| SWE         | Swedish          | T          |       89.0 |
+| THA         | Thai             | T          |       97.0 |
+| USA         | English          | T          |       86.2 |
+| USA         | Spanish          | F          |        9.7 |
+| VEN         | Spanish          | T          |       96.9 |
+| VNM         | Vietnamese       | T          |       87.0 |
+| ZAF         | Afrikaans        | T          |       13.5 |
+| ZAF         | English          | T          |        9.6 |
+| ZAF         | Zulu             | T          |       23.0 |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
