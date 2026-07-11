@@ -1,0 +1,633 @@
+
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 23
+Server version: 8.0.46 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2026, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> use mysql
+Database changed
+mysql> show tables;
++------------------------------------------------------+
+| Tables_in_mysql                                      |
++------------------------------------------------------+
+| city                                                 |
+| columns_priv                                         |
+| component                                            |
+| country                                              |
+| countrylanguage                                      |
+| db                                                   |
+| default_roles                                        |
+| department                                           |
+| departments                                          |
+| employee                                             |
+| employees                                            |
+| engine_cost                                          |
+| func                                                 |
+| general_log                                          |
+| global_grants                                        |
+| gtid_executed                                        |
+| help_category                                        |
+| help_keyword                                         |
+| help_relation                                        |
+| help_topic                                           |
+| innodb_index_stats                                   |
+| innodb_table_stats                                   |
+| ndb_binlog_index                                     |
+| password_history                                     |
+| plugin                                               |
+| procs_priv                                           |
+| project                                              |
+| projects                                             |
+| proxies_priv                                         |
+| replication_asynchronous_connection_failover         |
+| replication_asynchronous_connection_failover_managed |
+| replication_group_configuration_version              |
+| replication_group_member_actions                     |
+| role_edges                                           |
+| server_cost                                          |
+| servers                                              |
+| slave_master_info                                    |
+| slave_relay_log_info                                 |
+| slave_worker_info                                    |
+| slow_log                                             |
+| tables_priv                                          |
+| time_zone                                            |
+| time_zone_leap_second                                |
+| time_zone_name                                       |
+| time_zone_transition                                 |
+| time_zone_transition_type                            |
+| user                                                 |
++------------------------------------------------------+
+47 rows in set (0.13 sec)
+
+mysql> select*from employee;
++--------+----------+----------+---------+--------------+------------+
+| emp_id | emp_name | salary   | dept_id | job          | hire_date  |
++--------+----------+----------+---------+--------------+------------+
+|    101 | Amit     | 60000.00 |       2 | Developer    | 2021-06-12 |
+|    102 | Ravi     | 75000.00 |       2 | Manager      | 2020-03-15 |
+|    103 | Sneha    | 55000.00 |       1 | HR Executive | 2022-01-20 |
+|    104 | Priya    | 90000.00 |       3 | Accountant   | 2019-07-10 |
+|    105 | Vikas    | 50000.00 |       4 | Sales Exec   | 2022-05-30 |
+|    106 | Anjali   | 80000.00 |       2 | Developer    | 2021-08-25 |
+|    107 | Manoj    | 95000.00 |       3 | Manager      | 2018-11-05 |
++--------+----------+----------+---------+--------------+------------+
+7 rows in set (0.01 sec)
+
+mysql> select*from department;
++---------+-----------+-----------+
+| dept_id | dept_name | location  |
++---------+-----------+-----------+
+|       1 | HR        | Hyderabad |
+|       2 | IT        | Bangalore |
+|       3 | Finance   | Mumbai    |
+|       4 | Marketing | Delhi     |
++---------+-----------+-----------+
+4 rows in set (0.03 sec)
+
+mysql> select*from project;
++---------+-------------------+---------+------------+
+| proj_id | proj_name         | dept_id | budget     |
++---------+-------------------+---------+------------+
+|     201 | ERP System        |       2 | 1500000.00 |
+|     202 | Recruitment Drive |       1 |  300000.00 |
+|     203 | Annual Report     |       3 |  500000.00 |
+|     204 | Ad Campaign       |       4 |  700000.00 |
+|     205 | Mobile App        |       2 | 1200000.00 |
++---------+-------------------+---------+------------+
+5 rows in set (0.00 sec)
+
+mysql> select avg(salary)from employee;
++--------------+
+| avg(salary)  |
++--------------+
+| 72142.857143 |
++--------------+
+1 row in set (0.00 sec)
+
+mysql> select emp_name from employee where salary>72142.857143;
++----------+
+| emp_name |
++----------+
+| Ravi     |
+| Priya    |
+| Anjali   |
+| Manoj    |
++----------+
+4 rows in set (0.00 sec)
+
+mysql> select emp_name from employee where salary>(select avg(salary)from employee);
++----------+
+| emp_name |
++----------+
+| Ravi     |
+| Priya    |
+| Anjali   |
+| Manoj    |
++----------+
+4 rows in set (0.00 sec)
+
+mysql> -- employee in tha same department as 'ravi';
+
+mysql> select emp_name from employee
+    -> where dept_id=(select dept_id from employee where emp_name='ravi');
++----------+
+| emp_name |
++----------+
+| Amit     |
+| Ravi     |
+| Anjali   |
++----------+
+3 rows in set (0.01 sec)
+
+mysql> select*from country;
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+| Code | Name           | Continent     | Region                    | Population | LifeExpectancy | GNP         | Capital |
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+| ARG  | Argentina      | South America | South America             |   45800000 |           76.7 |   630000.00 |      81 |
+| AUS  | Australia      | Oceania       | Australia and New Zealand |   26600000 |           83.3 |  1690000.00 |      91 |
+| BEL  | Belgium        | Europe        | Western Europe            |   11600000 |           82.0 |   590000.00 |      20 |
+| BGD  | Bangladesh     | Asia          | Southern and Central Asia |  172000000 |           72.0 |   460000.00 |      59 |
+| BRA  | Brazil         | South America | South America             |  216400000 |           75.9 |  1920000.00 |      78 |
+| CAN  | Canada         | North America | North America             |   38900000 |           82.4 |  2140000.00 |      73 |
+| CHL  | Chile          | South America | South America             |   19600000 |           80.2 |   317000.00 |      87 |
+| CHN  | China          | Asia          | Eastern Asia              | 1412000000 |           78.2 | 17960000.00 |      46 |
+| COL  | Colombia       | South America | South America             |   52200000 |           73.0 |   343000.00 |      83 |
+| DEU  | Germany        | Europe        | Western Europe            |   83200000 |           81.0 |  4260000.00 |       1 |
+| DZA  | Algeria        | Africa        | Northern Africa           |   45400000 |           77.1 |   195000.00 |      44 |
+| EGY  | Egypt          | Africa        | Northern Africa           |  112700000 |           71.8 |   435000.00 |      32 |
+| ESP  | Spain          | Europe        | Southern Europe           |   47400000 |           83.5 |  1430000.00 |      13 |
+| ETH  | Ethiopia       | Africa        | Eastern Africa            |  126500000 |           66.2 |   126000.00 |      39 |
+| FRA  | France         | Europe        | Western Europe            |   68000000 |           82.5 |  2780000.00 |       4 |
+| GBR  | United Kingdom | Europe        | British Isles             |   67300000 |           81.2 |  3130000.00 |       7 |
+| GHA  | Ghana          | Africa        | Western Africa            |   33500000 |           64.6 |    77000.00 |      40 |
+| GRC  | Greece         | Europe        | Southern Europe           |   10400000 |           81.9 |   210000.00 |      26 |
+| IDN  | Indonesia      | Asia          | Southeast Asia            |  277500000 |           68.0 |  1320000.00 |      54 |
+| IND  | India          | Asia          | Southern and Central Asia | 1428000000 |           70.2 |  3730000.00 |      49 |
+| ITA  | Italy          | Europe        | Southern Europe           |   59000000 |           83.2 |  2010000.00 |      10 |
+| JPN  | Japan          | Asia          | Eastern Asia              |  123300000 |           84.5 |  4230000.00 |      52 |
+| KEN  | Kenya          | Africa        | Eastern Africa            |   55100000 |           66.7 |   113000.00 |      37 |
+| KOR  | South Korea    | Asia          | Eastern Asia              |   51700000 |           83.5 |  1670000.00 |      65 |
+| MAR  | Morocco        | Africa        | Northern Africa           |   37800000 |           74.0 |   135000.00 |      42 |
+| MCO  | Monaco         | Europe        | Southern Europe           |      39000 |           85.9 |     7500.00 |      28 |
+| MEX  | Mexico         | North America | Central America           |  128900000 |           70.7 |  1420000.00 |      76 |
+| NGA  | Nigeria        | Africa        | Western Africa            |  223800000 |           55.8 |   477000.00 |      29 |
+| NLD  | Netherlands    | Europe        | Western Europe            |   17700000 |           82.3 |   990000.00 |      18 |
+| NZL  | New Zealand    | Oceania       | Australia and New Zealand |    5200000 |           82.5 |   250000.00 |      94 |
+| PAK  | Pakistan       | Asia          | Southern and Central Asia |  240500000 |           66.6 |   375000.00 |      56 |
+| PER  | Peru           | South America | South America             |   34400000 |           72.9 |   242000.00 |      85 |
+| POL  | Poland         | Europe        | Eastern Europe            |   37700000 |           78.0 |   690000.00 |      16 |
+| PRT  | Portugal       | Europe        | Southern Europe           |   10300000 |           82.1 |   250000.00 |      24 |
+| SAU  | Saudi Arabia   | Asia          | Middle East               |   36900000 |           76.9 |  1010000.00 |      67 |
+| SWE  | Sweden         | Europe        | Nordic Countries          |   10500000 |           83.0 |   590000.00 |      22 |
+| THA  | Thailand       | Asia          | Southeast Asia            |   71800000 |           79.3 |   495000.00 |      63 |
+| USA  | United States  | North America | North America             |  339900000 |           79.3 | 25460000.00 |      69 |
+| VEN  | Venezuela      | South America | South America             |   28300000 |           72.1 |    90000.00 |      89 |
+| VNM  | Vietnam        | Asia          | Southeast Asia            |   98900000 |           73.6 |   410000.00 |      61 |
+| ZAF  | South Africa   | Africa        | Southern Africa           |   60400000 |           65.3 |   405000.00 |      34 |
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+41 rows in set (0.00 sec)
+
+mysql> -- 1.find the country with largest population .
+mysql> -- find the cities in the same country asnewyork
+mysql> -- find counries with population greater than indias population
+mysql> -- find the capital city of brizil
+mysql> -- find counries in the same conintinent city .
+mysql> select name,population from country
+    -> where population=(select max(population)from country);
++-------+------------+
+| name  | population |
++-------+------------+
+| India | 1428000000 |
++-------+------------+
+1 row in set (0.00 sec)
+
+
+mysql> select name,population from city
+    -> where countrycode = (select countrycode from city where name='new york');
++-------------+------------+
+| name        | population |
++-------------+------------+
+| Washington  |     690000 |
+| New York    |    8800000 |
+| Los Angeles |    3900000 |
+| Chicago     |    2700000 |
++-------------+------------+
+4 rows in set (0.00 sec)
+
+mysql> select name populaion
+    -> from country
+    -> where population>(select population from country where name='india');
+Empty set (0.00 sec)
+
+mysql> select c.name as cityname,c.population from city c
+    -> where c.id=(select capital from country where name='brazil');
++----------+------------+
+| cityname | population |
++----------+------------+
+| Brasilia |    3100000 |
++----------+------------+
+1 row in set (0.00 sec)
+
+mysql> select name,continent from country
+    -> where continent=(select continent from country where name='japan');
++--------------+-----------+
+| name         | continent |
++--------------+-----------+
+| Bangladesh   | Asia      |
+| China        | Asia      |
+| Indonesia    | Asia      |
+| India        | Asia      |
+| Japan        | Asia      |
+| South Korea  | Asia      |
+| Pakistan     | Asia      |
+| Saudi Arabia | Asia      |
+| Thailand     | Asia      |
+| Vietnam      | Asia      |
++--------------+-----------+
+10 rows in set (0.00 sec)
+
+mysql> -- employees with salry greater than any it employee .
+mysql> select emp_name,salary
+    -> from employee
+    -> where salary>any(select salary from employee where dept_id=2);
++----------+----------+
+| emp_name | salary   |
++----------+----------+
+| Ravi     | 75000.00 |
+| Priya    | 90000.00 |
+| Anjali   | 80000.00 |
+| Manoj    | 95000.00 |
++----------+----------+
+4 rows in set (0.00 sec)
+
+mysql> -- employees hired before any finance employee.
+mysql> -- employees earning more than any marketing employee
+mysql> -- project with budget greater than any it project
+mysql> employees whose salary is lessthan any hr employee salary
+    
+mysql> select emp_name,hire_date from employee
+    -> where hire_date<any(select hire_date from employee where dept_id=(select dept_id from department where dept_name='finance'));
++----------+------------+
+| emp_name | hire_date  |
++----------+------------+
+| Manoj    | 2018-11-05 |
++----------+------------+
+1 row in set (0.01 sec)
+
+mysql> select emp_name,salary from employee
+   ->  where salary > any(select salary from employee where dept_id =(select dept_id from department where dept_name='marketing'));
++----------+----------+
+| emp_name | salary   |
++----------+----------+
+| Amit     | 60000.00 |
+| Ravi     | 75000.00 |
+| Sneha    | 55000.00 |
+| Priya    | 90000.00 |
+| Anjali   | 80000.00 |
+| Manoj    | 95000.00 |
++----------+----------+
+6 rows in set (0.00 sec)
+
+mysql> select emp_name,hire_date from employee
+    -> where hire_date<any(select hire_date from employee where dept_id=3);
++----------+------------+
+| emp_name | hire_date  |
++----------+------------+
+| Manoj    | 2018-11-05 |
++----------+------------+
+1 row in set (0.00 sec)
+
+mysql> select proj_name,budget from project
+    -> where budget>any(select budget from project where dept_id=2);
++------------+------------+
+| proj_name  | budget     |
++------------+------------+
+| ERP System | 1500000.00 |
++------------+------------+
+1 row in set (0.00 sec)
+
+mysql> select proj_name,budget from project
+    -> where budget>any(select budget from project where dept_id=1);
++---------------+------------+
+| proj_name     | budget     |
++---------------+------------+
+| ERP System    | 1500000.00 |
+| Annual Report |  500000.00 |
+| Ad Campaign   |  700000.00 |
+| Mobile App    | 1200000.00 |
++---------------+------------+
+4 rows in set (0.00 sec)
+
+mysql> -- find countries with population greater than any europen country
+mysql> -- find cities with population greater than any city in usa
+mysql> -- find countries with life expectancy greater than any african country
+mysql> select*from country;
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+| Code | Name           | Continent     | Region                    | Population | LifeExpectancy | GNP         | Capital |
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+| ARG  | Argentina      | South America | South America             |   45800000 |           76.7 |   630000.00 |      81 |
+| AUS  | Australia      | Oceania       | Australia and New Zealand |   26600000 |           83.3 |  1690000.00 |      91 |
+| BEL  | Belgium        | Europe        | Western Europe            |   11600000 |           82.0 |   590000.00 |      20 |
+| BGD  | Bangladesh     | Asia          | Southern and Central Asia |  172000000 |           72.0 |   460000.00 |      59 |
+| BRA  | Brazil         | South America | South America             |  216400000 |           75.9 |  1920000.00 |      78 |
+| CAN  | Canada         | North America | North America             |   38900000 |           82.4 |  2140000.00 |      73 |
+| CHL  | Chile          | South America | South America             |   19600000 |           80.2 |   317000.00 |      87 |
+| CHN  | China          | Asia          | Eastern Asia              | 1412000000 |           78.2 | 17960000.00 |      46 |
+| COL  | Colombia       | South America | South America             |   52200000 |           73.0 |   343000.00 |      83 |
+| DEU  | Germany        | Europe        | Western Europe            |   83200000 |           81.0 |  4260000.00 |       1 |
+| DZA  | Algeria        | Africa        | Northern Africa           |   45400000 |           77.1 |   195000.00 |      44 |
+| EGY  | Egypt          | Africa        | Northern Africa           |  112700000 |           71.8 |   435000.00 |      32 |
+| ESP  | Spain          | Europe        | Southern Europe           |   47400000 |           83.5 |  1430000.00 |      13 |
+| ETH  | Ethiopia       | Africa        | Eastern Africa            |  126500000 |           66.2 |   126000.00 |      39 |
+| FRA  | France         | Europe        | Western Europe            |   68000000 |           82.5 |  2780000.00 |       4 |
+| GBR  | United Kingdom | Europe        | British Isles             |   67300000 |           81.2 |  3130000.00 |       7 |
+| GHA  | Ghana          | Africa        | Western Africa            |   33500000 |           64.6 |    77000.00 |      40 |
+| GRC  | Greece         | Europe        | Southern Europe           |   10400000 |           81.9 |   210000.00 |      26 |
+| IDN  | Indonesia      | Asia          | Southeast Asia            |  277500000 |           68.0 |  1320000.00 |      54 |
+| IND  | India          | Asia          | Southern and Central Asia | 1428000000 |           70.2 |  3730000.00 |      49 |
+| ITA  | Italy          | Europe        | Southern Europe           |   59000000 |           83.2 |  2010000.00 |      10 |
+| JPN  | Japan          | Asia          | Eastern Asia              |  123300000 |           84.5 |  4230000.00 |      52 |
+| KEN  | Kenya          | Africa        | Eastern Africa            |   55100000 |           66.7 |   113000.00 |      37 |
+| KOR  | South Korea    | Asia          | Eastern Asia              |   51700000 |           83.5 |  1670000.00 |      65 |
+| MAR  | Morocco        | Africa        | Northern Africa           |   37800000 |           74.0 |   135000.00 |      42 |
+| MCO  | Monaco         | Europe        | Southern Europe           |      39000 |           85.9 |     7500.00 |      28 |
+| MEX  | Mexico         | North America | Central America           |  128900000 |           70.7 |  1420000.00 |      76 |
+| NGA  | Nigeria        | Africa        | Western Africa            |  223800000 |           55.8 |   477000.00 |      29 |
+| NLD  | Netherlands    | Europe        | Western Europe            |   17700000 |           82.3 |   990000.00 |      18 |
+| NZL  | New Zealand    | Oceania       | Australia and New Zealand |    5200000 |           82.5 |   250000.00 |      94 |
+| PAK  | Pakistan       | Asia          | Southern and Central Asia |  240500000 |           66.6 |   375000.00 |      56 |
+| PER  | Peru           | South America | South America             |   34400000 |           72.9 |   242000.00 |      85 |
+| POL  | Poland         | Europe        | Eastern Europe            |   37700000 |           78.0 |   690000.00 |      16 |
+| PRT  | Portugal       | Europe        | Southern Europe           |   10300000 |           82.1 |   250000.00 |      24 |
+| SAU  | Saudi Arabia   | Asia          | Middle East               |   36900000 |           76.9 |  1010000.00 |      67 |
+| SWE  | Sweden         | Europe        | Nordic Countries          |   10500000 |           83.0 |   590000.00 |      22 |
+| THA  | Thailand       | Asia          | Southeast Asia            |   71800000 |           79.3 |   495000.00 |      63 |
+| USA  | United States  | North America | North America             |  339900000 |           79.3 | 25460000.00 |      69 |
+| VEN  | Venezuela      | South America | South America             |   28300000 |           72.1 |    90000.00 |      89 |
+| VNM  | Vietnam        | Asia          | Southeast Asia            |   98900000 |           73.6 |   410000.00 |      61 |
+| ZAF  | South Africa   | Africa        | Southern Africa           |   60400000 |           65.3 |   405000.00 |      34 |
++------+----------------+---------------+---------------------------+------------+----------------+-------------+---------+
+41 rows in set (0.00 sec)
+
+mysql> select name,population,continent
+    -> from country
+    -> where population>any(select population from country where continent='europe');
++----------------+------------+---------------+
+| name           | population | continent     |
++----------------+------------+---------------+
+| Argentina      |   45800000 | South America |
+| Australia      |   26600000 | Oceania       |
+| Belgium        |   11600000 | Europe        |
+| Bangladesh     |  172000000 | Asia          |
+| Brazil         |  216400000 | South America |
+| Canada         |   38900000 | North America |
+| Chile          |   19600000 | South America |
+| China          | 1412000000 | Asia          |
+| Colombia       |   52200000 | South America |
+| Germany        |   83200000 | Europe        |
+| Algeria        |   45400000 | Africa        |
+| Egypt          |  112700000 | Africa        |
+| Spain          |   47400000 | Europe        |
+| Ethiopia       |  126500000 | Africa        |
+| France         |   68000000 | Europe        |
+| United Kingdom |   67300000 | Europe        |
+| Ghana          |   33500000 | Africa        |
+| Greece         |   10400000 | Europe        |
+| Indonesia      |  277500000 | Asia          |
+| India          | 1428000000 | Asia          |
+| Italy          |   59000000 | Europe        |
+| Japan          |  123300000 | Asia          |
+| Kenya          |   55100000 | Africa        |
+| South Korea    |   51700000 | Asia          |
+| Morocco        |   37800000 | Africa        |
+| Mexico         |  128900000 | North America |
+| Nigeria        |  223800000 | Africa        |
+| Netherlands    |   17700000 | Europe        |
+| New Zealand    |    5200000 | Oceania       |
+| Pakistan       |  240500000 | Asia          |
+| Peru           |   34400000 | South America |
+| Poland         |   37700000 | Europe        |
+| Portugal       |   10300000 | Europe        |
+| Saudi Arabia   |   36900000 | Asia          |
+| Sweden         |   10500000 | Europe        |
+| Thailand       |   71800000 | Asia          |
+| United States  |  339900000 | North America |
+| Venezuela      |   28300000 | South America |
+| Vietnam        |   98900000 | Asia          |
+| South Africa   |   60400000 | Africa        |
++----------------+------------+---------------+
+40 rows in set (0.00 sec)
+
+mysql> select name,population,countrycode
+    -> from city
+    -> where population>any(select population from city where countrycode='usa');
++------------------+------------+-------------+
+| name             | population | countrycode |
++------------------+------------+-------------+
+| Berlin           |    3677000 | DEU         |
+| Hamburg          |    1900000 | DEU         |
+| Munich           |    1500000 | DEU         |
+| Paris            |    2140000 | FRA         |
+| Marseille        |     870000 | FRA         |
+| London           |    8980000 | GBR         |
+| Birmingham       |    1145000 | GBR         |
+| Rome             |    2870000 | ITA         |
+| Milan            |    1370000 | ITA         |
+| Naples           |     950000 | ITA         |
+| Madrid           |    3280000 | ESP         |
+| Barcelona        |    1620000 | ESP         |
+| Valencia         |     800000 | ESP         |
+| Warsaw           |    1860000 | POL         |
+| Krakow           |     780000 | POL         |
+| Amsterdam        |     905000 | NLD         |
+| Brussels         |    1220000 | BEL         |
+| Stockholm        |     980000 | SWE         |
+| Abuja            |    1780000 | NGA         |
+| Lagos            |   15400000 | NGA         |
+| Kano             |    4100000 | NGA         |
+| Cairo            |   10100000 | EGY         |
+| Alexandria       |    5280000 | EGY         |
+| Pretoria         |    2470000 | ZAF         |
+| Johannesburg     |    5780000 | ZAF         |
+| Cape Town        |    4710000 | ZAF         |
+| Nairobi          |    4400000 | KEN         |
+| Mombasa          |    1300000 | KEN         |
+| Addis Ababa      |    5230000 | ETH         |
+| Accra            |    2560000 | GHA         |
+| Kumasi           |    3350000 | GHA         |
+| Casablanca       |    3750000 | MAR         |
+| Algiers          |    2760000 | DZA         |
+| Oran             |     850000 | DZA         |
+| Beijing          |   21890000 | CHN         |
+| Shanghai         |   24870000 | CHN         |
+| Shenzhen         |   17560000 | CHN         |
+| New Delhi        |   34700000 | IND         |
+| Mumbai           |   21300000 | IND         |
+| Bengaluru        |   13600000 | IND         |
+| Tokyo            |   37400000 | JPN         |
+| Osaka            |   19100000 | JPN         |
+| Jakarta          |   10900000 | IDN         |
+| Surabaya         |    2870000 | IDN         |
+| Islamabad        |    1140000 | PAK         |
+| Karachi          |   16800000 | PAK         |
+| Lahore           |   13000000 | PAK         |
+| Dhaka            |   22400000 | BGD         |
+| Chittagong       |    5200000 | BGD         |
+| Hanoi            |    8400000 | VNM         |
+| Ho Chi Minh City |    9300000 | VNM         |
+| Bangkok          |   10700000 | THA         |
+| Chiang Mai       |    1200000 | THA         |
+| Seoul            |    9500000 | KOR         |
+| Busan            |    3400000 | KOR         |
+| Riyadh           |    7680000 | SAU         |
+| Jeddah           |    4780000 | SAU         |
+| New York         |    8800000 | USA         |
+| Los Angeles      |    3900000 | USA         |
+| Chicago          |    2700000 | USA         |
+| Ottawa           |    1070000 | CAN         |
+| Toronto          |    2930000 | CAN         |
+| Mexico City      |    9200000 | MEX         |
+| Guadalajara      |    1500000 | MEX         |
+| Brasilia         |    3100000 | BRA         |
+| Sao Paulo        |   12300000 | BRA         |
+| Rio de Janeiro   |    6750000 | BRA         |
+| Buenos Aires     |    3080000 | ARG         |
+| Cordoba          |    1450000 | ARG         |
+| Bogota           |    7970000 | COL         |
+| Medellin         |    2530000 | COL         |
+| Lima             |    9700000 | PER         |
+| Arequipa         |    1080000 | PER         |
+| Santiago         |    6270000 | CHL         |
+| Caracas          |    2900000 | VEN         |
+| Maracaibo        |    1650000 | VEN         |
+| Sydney           |    5310000 | AUS         |
+| Melbourne        |    5150000 | AUS         |
+| Auckland         |    1700000 | NZL         |
++------------------+------------+-------------+
+79 rows in set (0.00 sec)
+
+mysql> -- employees with salary greater than all hr employees
+mysql> select emp_name,salary from employee where salary>all(select salary from employee where dept_id=1);
++----------+----------+
+| emp_name | salary   |
++----------+----------+
+| Amit     | 60000.00 |
+| Ravi     | 75000.00 |
+| Priya    | 90000.00 |
+| Anjali   | 80000.00 |
+| Manoj    | 95000.00 |
++----------+----------+
+5 rows in set (0.00 sec)
+
+mysql> -- employees with salary less than all it employees
+mysql> projects with budget greater than all finance department
+    -> -- employees hired before all marketing employees.
+   
+mysql> select emp_name,salary
+    -> from employee
+    -> where salary<all(select salary from employee where dept_id=2);
++----------+----------+
+| emp_name | salary   |
++----------+----------+
+| Sneha    | 55000.00 |
+| Vikas    | 50000.00 |
++----------+----------+
+2 rows in set (0.00 sec)
+
+mysql> -- find countries with population  greater than all europen countries
+mysql> -- find tha samllest city population wise that is still larger than all cities in monaco
+mysql> find the countries life expectency greater than all african countries.
+   
+mysql> select name,population,countrycode
+    -> from city
+    -> where population>all(select population from city where countrycode='mco')
+    -> order by population
+    -> limit 1;
++------------+------------+-------------+
+| name       | population | countrycode |
++------------+------------+-------------+
+| Wellington |     215000 | NZL         |
++------------+------------+-------------+
+1 row in set (0.00 sec)
+mysql> select name,lifeexpectancy,continent
+    -> from country
+    -> where lifeexpectancy>all(select lifeexpectancy from country
+    -> where continent='africa');
++----------------+----------------+---------------+
+| name           | lifeexpectancy | continent     |
++----------------+----------------+---------------+
+| Australia      |           83.3 | Oceania       |
+| Belgium        |           82.0 | Europe        |
+| Canada         |           82.4 | North America |
+| Chile          |           80.2 | South America |
+| China          |           78.2 | Asia          |
+| Germany        |           81.0 | Europe        |
+| Spain          |           83.5 | Europe        |
+| France         |           82.5 | Europe        |
+| United Kingdom |           81.2 | Europe        |
+| Greece         |           81.9 | Europe        |
+| Italy          |           83.2 | Europe        |
+| Japan          |           84.5 | Asia          |
+| South Korea    |           83.5 | Asia          |
+| Monaco         |           85.9 | Europe        |
+| Netherlands    |           82.3 | Europe        |
+| New Zealand    |           82.5 | Oceania       |
+| Poland         |           78.0 | Europe        |
+| Portugal       |           82.1 | Europe        |
+| Sweden         |           83.0 | Europe        |
+| Thailand       |           79.3 | Asia          |
+| United States  |           79.3 | North America |
++----------------+----------------+---------------+
+21 rows in set (0.00 sec)
+
+mysql> -- employees in dept having highst budget project
+
+mysql> select emp_name from employee
+    -> where dept_id=(select dept_id from project where budget=
+    -> (select max(budget)from project));
++----------+
+| emp_name |
++----------+
+| Amit     |
+| Ravi     |
+| Anjali   |
++----------+
+3 rows in set (0.00 sec)
+
+mysql> -- employees earning more than average salary of it department
+
+mysql> select emp_name,salary
+    -> from employee
+    -> where dept_id=(select avg(salary)from employee where dept_id
+    -> =(select dept_id from department where dept_name='it'));
+Empty set (0.01 sec)
+
+mysql> select emp_name,salary
+    -> from employee
+    -> where dept_id>(select avg(salary)from employee where dept_id
+    -> =(select dept_id from department where dept_name='it'));
+Empty set (0.00 sec)
+
+mysql> select emp_name,salary
+    -> from employee
+    -> where salary>(select avg(salary)from employee where dept_id=
+    -> (select dept_id from department where dept_name='it'));
++----------+----------+
+| emp_name | salary   |
++----------+----------+
+| Ravi     | 75000.00 |
+| Priya    | 90000.00 |
+| Anjali   | 80000.00 |
+| Manoj    | 95000.00 |
++----------+----------+
+4 rows in set (0.00 sec)
+
+mysql> -- find the cities in countries that have tha same continent as the country as the country with the largest population
