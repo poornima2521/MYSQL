@@ -1,0 +1,2818 @@
+MySQL VIEWS 
+1. What Is a View? 
+A view is a virtual table in MySQL, built from the result of a stored SELECT statement. It looks 
+and behaves like a regular table when you query it — you can SELECT from it, filter it, and join 
+it — but it does not store any data of its own. Every time a view is queried, MySQL runs its 
+underlying SELECT statement against the real ("base") tables and returns the result. 
+Think of a view as a saved, reusable query with a name. Instead of typing out a long JOIN every 
+time, you create the view once, then simply run: SELECT * FROM view_name; 
+CREATE VIEW view_name AS 
+SELECT column1, column2, ... 
+FROM table_name 
+WHERE condition; 
+2. Why Do We Need Views? 
+●       Simplify complex queries: Hide multi-table JOINs, subqueries, and calculations 
+behind a single, simple table-like name. 
+●       Reuse query logic: Write a complex SELECT once and reuse it everywhere — 
+reports, applications, dashboards — without copy-pasting SQL. 
+●       Data security: Expose only specific columns or rows to certain users, without 
+granting them access to the full base table. 
+●       Different perspectives of the same data: Different departments can have their own 
+tailored 'view' of the same underlying tables. 
+●       Logical data independence: If the underlying table structure changes slightly, you 
+can often adjust just the view definition and keep all dependent queries working 
+unchanged. 
+●       Simplified reporting: Pre-package aggregations (totals, averages, counts) into a 
+view so business users can query them without knowing SQL joins or GROUP BY. 
+3. Advantages of Views 
+●       Security: restrict access to sensitive columns (e.g. salary) or sensitive rows (e.g. only 
+a user's own department). 
+●       Simplicity: end users and applications interact with a simple, named virtual table 
+instead of complex SQL. 
+●       Reusability: one view definition can be reused across many reports, applications, and 
+ad-hoc queries. 
+●       Consistency: business logic (calculations, filters) lives in one place, so results are 
+always consistent. 
+●       Maintainability: a business-rule change only needs to be made once, inside the view. 
+●       Custom data presentation: rename or reformat columns, add computed columns, 
+without touching the base table. 
+●       No extra storage cost: a standard view stores no data — only its query definition. 
+4. What Happens Without Views? 
+Without views, every application, report, or analyst that needs the same 
+joined/filtered/aggregated data must write out (and maintain) the full SQL logic independently. 
+This leads to duplicated code, inconsistent results when the logic drifts between copies, harder 
+security control, and painful maintenance whenever the business rules or schema change. 
+Aspect 
+Repeated complex 
+JOINs 
+Without Views 
+With Views 
+Every report/query rewrites the same 
+5-table JOIN logic 
+JOIN logic is written once inside the 
+view 
+Security 
+Consistency 
+Users need direct table access; hard to 
+hide specific columns/rows 
+Business logic can drift between copies 
+of the same query 
+Users query a view that exposes only 
+approved columns/rows 
+Single source of truth — one definition 
+used everywhere 
+Maintenance 
+Readability 
+Storage 
+A schema or rule change means 
+updating every copy of the query 
+Application code full of long, repeated 
+SQL joins 
+N/A — no extra storage either way 
+Creating Views 
+Basic Syntax: 
+CREATE VIEW view_name AS 
+SELECT columns 
+FROM tables 
+WHERE conditions; 
+Altering Views 
+Syntax for ALTER VIEW: 
+ALTER VIEW view_name AS 
+SELECT new_columns 
+FROM new_tables 
+WHERE new_conditions; 
+Change the view definition once; every 
+consumer gets the update 
+Application code simply does SELECT 
+* FROM view_name 
+No extra storage — a view is virtual, 
+not a copy of data 
+Note: Not all database systems support ALTER VIEW. Some require DROP and CREATE. 
+Dropping Views 
+Basic Syntax: 
+DROP VIEW view_name; 
+DROP VIEW IF EXISTS view_name;  -- Safe drop 
+  
+5. Real-Time Example: Database & Table 
+Setup 
+The examples in this guide use a simple company database with two related tables: departments 
+and employees. 
+CREATE TABLE departments ( 
+ dept_id INT PRIMARY KEY AUTO_INCREMENT, 
+ dept_name VARCHAR(50), 
+ location VARCHAR(50) 
+); 
+  
+CREATE TABLE employees ( 
+ emp_id INT PRIMARY KEY AUTO_INCREMENT, 
+ emp_name VARCHAR(100), 
+ dept_id INT, 
+ designation VARCHAR(50), 
+ salary DECIMAL(10,2), 
+ join_date DATE, 
+ FOREIGN KEY (dept_id) REFERENCES departments(dept_id) 
+); 
+Sample Data 
+INSERT INTO departments (dept_name, location) VALUES 
+('IT','Hyderabad'), ('HR','Bangalore'), ('Finance','Chennai'), ('Sales','Mumbai'); 
+  
+INSERT INTO employees (emp_name, dept_id, designation, salary, join_date) VALUES 
+('Rahul',1,'Software Engineer',55000,'2021-06-15'), 
+('Anita',2,'HR Executive',38000,'2020-03-21'), 
+('Suresh',4,'Sales Manager',52000,'2019-08-10'), 
+('Priya',1,'Team Lead',65000,'2022-01-05'), 
+('Kiran',3,'Finance Analyst',48000,'2018-12-11'), 
+('Deepika',2,'HR Manager',60000,'2019-10-19'); 
+ 
+  
+6. View Examples 
+6.1  Basic View — Employee-Department Join 
+Use case: avoid re-writing the JOIN between employees and departments every time someone 
+needs an employee's department name. 
+CREATE VIEW vw_employee_department AS 
+SELECT e.emp_id, e.emp_name, e.designation, d.dept_name, d.location 
+FROM employees e 
+JOIN departments d ON e.dept_id = d.dept_id; 
+  -- Usage 
+SELECT * FROM vw_employee_department; 
+6.2  Security View — Hiding Salary 
+Use case: HR generalists should see employee details, but salary must stay restricted to payroll 
+staff only. 
+CREATE VIEW vw_employee_public AS 
+SELECT emp_id, emp_name, designation, dept_id, join_date 
+FROM employees; 
+  -- Grant access to the view only, never to the base table 
+GRANT SELECT ON company.vw_employee_public TO 'hr_user'@'%'; 
+6.3  Aggregate / Reporting View — Department Salary 
+Summary 
+Use case: management wants total and average salary per department without re-writing GROUP 
+BY logic every time. 
+CREATE VIEW vw_department_salary_summary AS 
+SELECT d.dept_name, 
+    COUNT(e.emp_id)   AS total_employees, 
+    SUM(e.salary)  AS total_salary, 
+    AVG(e.salary)  AS average_salary 
+FROM employees e 
+JOIN departments d ON e.dept_id = d.dept_id 
+GROUP BY d.dept_name; 
+  -- Usage 
+SELECT * FROM vw_department_salary_summary; 
+Note: because this view uses GROUP BY and aggregate functions, it is read-only — it cannot be 
+used for INSERT, UPDATE, or DELETE. 
+6.4  Filtered, Updatable View — WITH CHECK OPTION 
+Use case: an 'IT department only' view that stays consistent even when new rows are added 
+through it. 
+CREATE VIEW vw_it_employees AS 
+SELECT emp_id, emp_name, designation, dept_id, salary 
+FROM employees 
+WHERE dept_id = 1 
+WITH CHECK OPTION; 
+  -- This succeeds (dept_id matches the view's WHERE clause) 
+INSERT INTO vw_it_employees (emp_name, dept_id, designation, salary) 
+VALUES ('Vijay', 1, 'DevOps Engineer', 58000); 
+  -- This fails because dept_id = 2 violates the view's WHERE condition 
+INSERT INTO vw_it_employees (emp_name, dept_id, designation, salary) 
+VALUES ('Sneha', 2, 'HR Assistant', 40000); 
+6.5  Computed Column View — Annual Salary 
+Use case: present a calculated column (annual salary) without altering the base table. 
+CREATE VIEW vw_employee_annual_salary AS 
+SELECT emp_name, salary AS monthly_salary, salary * 12 AS annual_salary 
+FROM employees; 
+6.6  Multi-Level View — Built on Another View 
+Use case: a 'high earners' view built directly on top of the department salary summary view. 
+CREATE VIEW vw_high_paying_departments AS 
+SELECT dept_name, average_salary 
+FROM vw_department_salary_summary 
+WHERE average_salary > 50000; 
+ 
+  
+7. Updating Data Through Views 
+A view is updatable only when MySQL can unambiguously map each row of the view back to 
+exactly one row of one base table. A view becomes non-updatable if it contains any of the 
+following: 
+●       Aggregate functions: SUM(), COUNT(), AVG(), MIN(), MAX() 
+●       GROUP BY or HAVING 
+●       DISTINCT 
+●       UNION or UNION ALL 
+●       Subqueries in the SELECT list that refer to the same base table 
+●       Joins where the modified column doesn't map to a single base table -- Updatable example 
+UPDATE vw_it_employees 
+SET salary = 60000 
+WHERE emp_name = 'Vijay'; 
+  -- Reflected immediately in the base employees table 
+8. Managing Views — ALTER, DROP, SHOW -- View the exact definition of a view 
+SHOW CREATE VIEW vw_employee_department; 
+  -- Modify an existing view's definition 
+ALTER VIEW vw_employee_department AS 
+SELECT e.emp_id, e.emp_name, d.dept_name 
+FROM employees e 
+JOIN departments d ON e.dept_id = d.dept_id; 
+  -- Remove a view (base table data is untouched) 
+DROP VIEW vw_employee_department; 
+  -- List all views in the current database 
+SELECT table_name 
+FROM information_schema.views 
+WHERE table_schema = 'jfs2'; 
+ 
+  
+9. Types of Views 
+●       Simple View: Built from a single table, with no aggregate functions, GROUP BY, or 
+joins. Usually fully updatable. 
+●       Complex View: Built from multiple tables using joins, and/or includes aggregate 
+functions, GROUP BY, or subqueries. Often read-only. 
+●       Updatable View: A view (simple or a well-formed join) through which 
+INSERT/UPDATE/DELETE can be performed. 
+●       Read-Only View: Any view containing aggregates, GROUP BY, DISTINCT, or 
+UNION — data can only be selected, never modified through it. 
+●       Materialized View (not native to MySQL): A view whose results are physically 
+stored and periodically refreshed. MySQL does not support this natively — it must be 
+simulated using a real summary table refreshed via a scheduled EVENT or trigger. 
+10. Interview Questions — Basic Level 
+Q1. What is a view in MySQL? 
+A view is a virtual table based on the result of a stored SELECT query. It does not store data itself (in standard 
+MySQL views) — it stores the query definition, and the data is fetched from the underlying base table(s) each 
+time the view is used. 
+Q2. How do you create a view? 
+Use the CREATE VIEW statement followed by a SELECT query. Example: CREATE VIEW view_name AS 
+SELECT column1, column2 FROM table_name WHERE condition; 
+Q3. How do you see the data inside a view? 
+You query it exactly like a table: SELECT * FROM view_name; 
+Q4. How do you check the underlying SQL definition of a view? 
+Use SHOW CREATE VIEW view_name; — this returns the exact CREATE VIEW statement used to define it. 
+Q5. How do you delete (remove) a view? 
+Use DROP VIEW view_name; This removes only the view definition, never the underlying table data. 
+Q6. Does a view store data physically? 
+No. A standard MySQL view does not store data. It stores only the query. Every time the view is accessed, 
+MySQL re-executes the underlying query against the base table(s). 
+Q7. What is the main difference between a table and a view? 
+A table physically stores data on disk, while a view is a stored query that presents data drawn live from one or 
+more tables. Views have no independent storage for rows. 
+Q8. Can a view be created using multiple tables? 
+Yes. A view can be based on a JOIN across two or more tables, exactly as a normal SELECT query can. 
+Q9. Can you use WHERE, GROUP BY, and ORDER BY inside a view definition? 
+Yes, a view can include WHERE, GROUP BY, HAVING, JOIN, and (with some restrictions in subqueries) 
+ORDER BY clauses, since it is built from any valid SELECT statement. 
+Q10. Is it possible to rename a view? 
+MySQL has no direct RENAME VIEW command. The common approach is to create a new view with the 
+desired name using the same SELECT definition, then drop the old view. 
+11. Interview Questions — Intermediate Level 
+Q1. What is an updatable view? What restrictions apply? 
+An updatable view allows INSERT, UPDATE, and DELETE operations that pass through to the base table. A 
+view is updatable only if it has no aggregate functions (SUM, COUNT, AVG, etc.), no GROUP 
+BY/HAVING/DISTINCT, no UNION, and comes from a single table (or a join where the modified columns 
+map to one underlying table). 
+Q2. What is the WITH CHECK OPTION and why is it used? 
+WITH CHECK OPTION ensures that any INSERT or UPDATE performed through the view still satisfies the 
+view's WHERE clause. Without it, a user could insert or update a row through a filtered view and the row 
+would then silently disappear from that view's result set. 
+Q3. Can you insert data into a view? Under what conditions? 
+Yes, but only if the view is updatable (see above) and the INSERT provides values for all NOT NULL columns 
+of the base table that are not included in the view (or those columns have defaults). 
+Q4. Does MySQL support materialized views? 
+Not natively. MySQL views are always virtual — they run the underlying query on every access. To get 
+materialized-view-like behavior, you must manually create a real table and refresh it periodically (e.g. via a 
+scheduled event or trigger), which acts as a workaround. 
+Q5. Can a view be created on top of another view? 
+Yes, MySQL allows nested views — a view can be defined using a SELECT that reads from another view. 
+However, deeply nested views can hurt performance and make debugging harder. 
+Q6. What happens if you drop or alter a base table that a view depends on? 
+MySQL does not check view dependencies at DROP time. If you drop or rename a column/table used by a 
+view, the view becomes invalid, and querying it will raise an error at execution time (MySQL uses a 'late 
+binding' approach for views). 
+Q7. Do views improve query performance? 
+Not directly. A view is essentially a saved query — MySQL still executes the full underlying SELECT (join, 
+filters, aggregation) every time the view is queried. Views improve readability, reusability, and security, not 
+raw execution speed. In fact, deeply nested or poorly written views can slow things down. 
+Q8. How do you modify an existing view's definition? 
+Use ALTER VIEW view_name AS SELECT ...; to redefine it, or DROP VIEW followed by CREATE VIEW 
+with the new definition. 
+Q9. Can indexes be created directly on a MySQL view? 
+No. Since a standard MySQL view has no physical storage, you cannot create an index directly on it. 
+Performance for a view depends entirely on the indexes that exist on its underlying base tables. 
+Q10. Can a view include an ORDER BY clause, and does it always take effect? 
+A view can include ORDER BY, but if the outer query that selects from the view also has its own ORDER BY, 
+the outer ORDER BY takes precedence, and the view's internal ordering may be ignored by the optimizer. 
+12. Interview Questions — Advanced Level 
+Q1. How do views help implement security and access control? 
+Views let you expose only specific columns or rows of a table to certain users (column-level and row-level 
+security), without granting them direct access to the base table. For example, a view can omit a salary column 
+entirely so HR staff can see employee details but not compensation data, and you grant SELECT only on the 
+view, not on the table. 
+Q2. What are the key limitations of MySQL views? 
+Views cannot have their own indexes; they cannot use certain constructs (like variables, some subquery forms) 
+that make them non-updatable; performance depends on the underlying query being re-run every time; and 
+MySQL does not validate view dependencies automatically when base tables change. 
+Q3. Explain MySQL's ALGORITHM=MERGE vs ALGORITHM=TEMPTABLE for 
+views. 
+MERGE algorithm rewrites the outer query and the view's query into a single query and pushes conditions 
+down to the base tables — this is generally faster and allows the view to be updatable. TEMPTABLE 
+algorithm executes the view's query first into an internal temporary table, then runs the outer query against that 
+temp table — this is often slower and makes the view non-updatable. MySQL uses MERGE whenever 
+possible and falls back to TEMPTABLE when the view contains aggregates, DISTINCT, GROUP BY, 
+UNION, or subqueries in the SELECT list. 
+Q4. How would you find out which views depend on a specific table? 
+Query the information_schema.VIEWS table and inspect the VIEW_DEFINITION column (or use 
+information_schema.TABLES together with view metadata) to search for references to the table name. There 
+isn't a single built-in 'dependency' table, so text-searching VIEW_DEFINITION for the table name is the 
+common approach: SELECT table_name, view_definition FROM information_schema.views WHERE 
+view_definition LIKE '%employees%'; 
+Q5. Can a view span multiple databases in MySQL? 
+Yes. A view's SELECT statement can reference tables from a different database using db_name.table_name 
+syntax, as long as the user creating/using the view has the right privileges on both databases. 
+Q6. Describe a scenario where a view could hurt performance. 
+A reporting view that joins several large tables with aggregate functions, built on top of two or three other 
+nested views, forces MySQL to use the TEMPTABLE algorithm and materialize large intermediate result sets 
+in memory or on disk for every single query — even a simple SELECT * FROM view WHERE emp_id = 5 
+ends up scanning and joining much more data than necessary. 
+Q7. What is the DEFINER clause in a view, and why does it matter? 
+When a view is created, MySQL records a DEFINER (the user account that created it). By default, the view 
+executes with the privileges of that definer, not the querying user (SQL SECURITY DEFINER, the default). 
+This lets you grant end users access to a view without granting them any direct privileges on the underlying 
+base tables — the view runs with the definer's higher privileges. SQL SECURITY INVOKER changes this so 
+the view runs with the querying user's own privileges instead. 
+Q8. Can views support aggregate functions and GROUP BY? Are such views updatable? 
+Yes, views can include SUM(), COUNT(), AVG(), GROUP BY, and HAVING. However, such views are never 
+updatable — MySQL disallows INSERT/UPDATE/DELETE through any view containing aggregate 
+functions, GROUP BY, HAVING, DISTINCT, or UNION, because there's no unambiguous way to map a 
+change back to a single base-table row. 
+Q9. How can you achieve materialized-view-like behavior in MySQL, since it isn't 
+supported natively? 
+Create a real physical 'summary' table that mirrors the view's result, and populate/refresh it periodically using a 
+MySQL EVENT (scheduled job) or a trigger-driven update. Applications query this summary table directly for 
+fast reads, while the refresh job keeps it in sync with the source tables — trading real-time accuracy for read 
+performance. 
+Q10. If two views are nested (a view built on another view), how does MySQL execute the 
+outer query? 
+MySQL expands nested views at parse time — the outer view's query is effectively rewritten to substitute the 
+inner view's SELECT definition, then the whole thing is optimized together where possible using the MERGE 
+algorithm. If any level requires TEMPTABLE (e.g. due to aggregation), MySQL materializes that intermediate 
+result first, which can compound performance costs across multiple nesting levels. 
+13. Real-World Scenario-Based Questions 
+These questions are commonly asked in interviews to test whether a candidate understands 
+practical, real-world use of views rather than just syntax. 
+Scenario 1. HR staff need to see employee names, designations, and departments, but must 
+NOT see salary information. How would you solve this using views? 
+Solution: Create a view that selects only the non-sensitive columns (emp_id, emp_name, designation, dept_id) 
+and excludes salary entirely. Grant HR staff SELECT privilege only on this view — not on the base employees 
+table. They can never query a column that was never included in the view's definition. 
+Scenario 2. Management wants one query that always shows total and average salary per 
+department, without every analyst having to write the same JOIN + GROUP BY each time. 
+How do views help? 
+Solution: Create a reporting view (e.g. vw_department_salary_summary) that performs the JOIN between 
+employees and departments with SUM(salary) and AVG(salary) grouped by department, once. Analysts then 
+simply run SELECT * FROM vw_department_salary_summary; getting consistent, up-to-date figures without 
+duplicating the underlying logic in every report or tool. 
+Scenario 3. A 5-table join with complex business logic is copy-pasted into 20 different places 
+in the application. What problem does this cause, and how do views fix it? 
+Solution: Duplicating the same complex query in 20 places means every future business-rule change (a new 
+filter, a renamed column, an extra join condition) has to be updated in 20 places, which is error-prone and 
+inconsistent. Wrapping the logic in a single view centralizes it — the application code everywhere simply does 
+SELECT ... FROM the_view, and any future change to the business logic is made once, inside the view 
+definition. 
+Scenario 4. The DBA wants to restrict staff to only certain columns of a sensitive table, 
+without managing column-level GRANTs. How do views solve this? 
+Solution: Create a view exposing only the approved columns, and grant privileges on the view instead of the 
+base table. This achieves column-level security without MySQL's more cumbersome column-level GRANT 
+syntax, and it's easy to audit since all restricted access flows through one well-named view. 
+Scenario 5. A view is created with WITH CHECK OPTION and a WHERE clause restricting 
+it to department = 'IT'. A user tries to INSERT a row through this view with department = 
+'HR'. What happens? 
+Solution: The INSERT is rejected by MySQL with an error, because WITH CHECK OPTION enforces that 
+any row inserted or updated through the view must still satisfy the view's WHERE condition (department = 
+'IT'). Without WITH CHECK OPTION, the insert would silently succeed in the base table but the new HR row 
+would simply not appear when querying the view again. 
+Scenario 6. A view was created using ALGORITHM=TEMPTABLE because it contains a 
+GROUP BY. What's the practical impact for the team using it? 
+Solution: The view will always be read-only (no INSERT/UPDATE/DELETE through it), and every SELECT 
+against it forces MySQL to build an internal temporary table first — which is slower than the MERGE 
+approach, especially on large base tables. For a frequently queried report, the team should consider 
+periodically caching the results in a real summary table instead of hitting this view constantly. 
+Scenario 7. A column referenced by a view gets renamed by another team during a migration. 
+What happens to the view, and how would you catch this early? 
+Solution: MySQL does not validate views against schema changes at the time the column is renamed — the 
+view keeps its old definition text. The problem only surfaces when someone actually queries the view and gets 
+an 'Unknown column' error. To catch this early, teams should search information_schema.views for references 
+to any column/table before making a breaking schema change, or add automated tests that run SELECT * 
+FROM view_name; against a staging database as part of the migration checklist. 
+Scenario 8. Your reporting dashboard needs fast reads on aggregated sales data, but MySQL 
+views don't cache or materialize results. How would you work around this? 
+Solution: Build a real, physical 'materialized view' equivalent: a summary table (e.g. daily_sales_summary) 
+populated by a scheduled MySQL EVENT or an ETL job that runs the aggregate query and stores the results. 
+The dashboard reads from this fast, indexed summary table instead of recomputing the aggregation on every 
+page load, accepting a small refresh-interval delay in exchange for speed. 
+Sub-Queries Exercises 
+==================== 
+SQL Subqueries Master Workbook 
+Single Row • ANY/SOME • ALL • Nested • Correlated • EXISTS/NOT EXISTS 
+This workbook builds one shared sample company database 
+(department, employee, project, employee_project, sales) and uses it to 
+demonstrate all six subquery categories. Every single query below — all 
+180 of them — was actually executed against the sample data, so every 
+result shown is verified, not guessed. 
+180 questions total — 6 categories × 30 questions (10 Basic + 10 
+Intermediate + 10 Advanced each). 
+Note on ANY/ALL: SQLite (used to verify these results) does not implement the ANY/SOME/ALL keywords. The SQL shown for 
+that section uses the standard ANY/ALL syntax you would use in Oracle, PostgreSQL, or SQL Server; the verified result was 
+produced by running the mathematically equivalent MIN/MAX/IN form (e.g. '> ANY(...)' is equivalent to '> MIN(...)', and '> 
+ALL(...)' is equivalent to '> MAX(...)'). 
+0. Sample Database 
+Five tables model a small company: departments, their employees (with 
+a self-referencing manager relationship), projects run by departments, an 
+assignment table linking employees to projects with logged hours, and a 
+sales ledger. 
+0.1 Schema 
+CREATE TABLE department (DeptID INTEGER PRIMARY KEY, DeptName TEXT, Location TEXT, Budget REAL); 
+CREATE TABLE employee (EmpID INTEGER PRIMARY KEY, Name TEXT, DeptID INTEGER, JobTitle TEXT, 
+Salary REAL, HireDate TEXT, ManagerID INTEGER, Age INTEGER); 
+CREATE TABLE project (ProjectID INTEGER PRIMARY KEY, ProjectName TEXT, DeptID INTEGER, 
+Budget REAL, StartDate TEXT); 
+CREATE TABLE employee_project (EmpID INTEGER, ProjectID INTEGER, HoursWorked INTEGER); 
+CREATE TABLE sales (SaleID INTEGER PRIMARY KEY, EmpID INTEGER, SaleAmount REAL, 
+SaleDate TEXT, Region TEXT); 
+Run the CREATE TABLE statements from Section 0.1, then the inserts 
+below, to reproduce the exact database used throughout this workbook. 
+A.1 department 
+INSERT INTO department VALUES 
+(1,'Sales','New York',500000), 
+(2,'Engineering','San Francisco',1200000), 
+(3,'Marketing','Chicago',300000), 
+(4,'HR','New York',150000), 
+(5,'Finance','Boston',400000); 
+A.2 employee 
+INSERT INTO employee VALUES 
+(1,'John Smith',2,'CEO',250000,'2010-01-15',NULL,55), 
+(2,'Mary Johnson',1,'Sales Director',150000,'2012-03-10',1,48), 
+(3,'Robert Lee',2,'Engineering Director',180000,'2011-06-01',1,50), 
+(4,'Susan Kim',3,'Marketing Director',140000,'2013-02-20',1,45), 
+(5,'David Brown',4,'HR Director',120000,'2014-05-15',1,42), 
+(6,'Linda White',5,'Finance Director',160000,'2012-09-01',1,47), 
+(7,'Tom Harris',1,'Sales Rep',70000,'2015-01-10',2,30), 
+(8,'Nancy Davis',1,'Sales Rep',75000,'2016-04-12',2,33), 
+(9,'Kevin Wilson',1,'Sales Rep',68000,'2018-07-23',2,28), 
+(10,'Emily Clark',2,'Software Engineer',95000,'2015-03-01',3,29), 
+(11,'Brian Moore',2,'Software Engineer',98000,'2016-08-15',3,31), 
+(12,'Jessica Taylor',2,'Senior Engineer',115000,'2013-11-05',3,36), 
+(13,'Daniel Anderson',2,'QA Engineer',80000,'2017-02-18',3,27), 
+(14,'Michelle Thomas',3,'Marketing Analyst',65000,'2016-06-01',4,26), 
+(15,'Chris Jackson',3,'Marketing Analyst',67000,'2017-09-14',4,29), 
+(16,'Amanda White',3,'Content Strategist',62000,'2019-01-22',4,25), 
+(17,'Steven Harris',4,'HR Specialist',58000,'2015-10-10',5,34), 
+(18,'Laura Martin',4,'HR Specialist',60000,'2018-03-03',5,30), 
+(19,'Paul Thompson',5,'Financial Analyst',85000,'2014-12-01',6,38), 
+(20,'Karen Garcia',5,'Financial Analyst',88000,'2016-05-19',6,35), 
+(21,'George Martinez',5,'Accountant',72000,'2019-08-08',6,29), 
+(22,'Rachel Robinson',2,'Software Engineer',97000,'2020-01-15',3,26), 
+(23,'Edward Clark',1,'Sales Rep',71000,'2020-06-10',2,27), 
+(24,'Sophia Lewis',3,'Marketing Manager',99000,'2012-02-14',4,40), 
+(25,'Matthew Walker',2,'Principal Engineer',135000,'2011-04-04',3,44); 
+  
+A.3 project 
+INSERT INTO project VALUES 
+(1,'Website Redesign',2,200000,'2021-01-10'), 
+(2,'Mobile App',2,350000,'2020-05-01'), 
+(3,'Ad Campaign Q1',3,120000,'2021-02-15'), 
+(4,'Recruitment Drive',4,50000,'2021-03-01'), 
+(5,'Audit 2021',5,80000,'2021-01-05'), 
+(6,'Sales Expansion',1,150000,'2020-11-20'), 
+(7,'Data Migration',2,250000,'2019-09-01'), 
+(8,'Brand Refresh',3,90000,'2022-01-10'); 
+  
+A.4 employee_project 
+INSERT INTO employee_project VALUES 
+(10,1,120),(11,1,150),(13,1,90), 
+(12,2,200),(25,2,180),(22,7,100), 
+(14,3,80),(15,3,70),(24,3,60), 
+(16,8,50), 
+(17,4,40),(18,4,45), 
+(19,5,60),(20,5,55),(21,5,50), 
+(7,6,100),(8,6,90),(9,6,80),(23,6,70); 
+  
+A.5 sales 
+INSERT INTO sales VALUES 
+(1,7,15000,'2021-01-05','North'),(2,7,22000,'2021-02-11','North'),(3,7,18000,'2021-03-20','North'), 
+(4,8,25000,'2021-01-08','South'),(5,8,30000,'2021-02-14','South'),(6,8,27000,'2021-03-25','South'), 
+(7,9,12000,'2021-01-15','East'),(8,9,14000,'2021-02-19','East'),(9,9,16000,'2021-03-28','East'), 
+(10,23,20000,'2021-01-22','West'),(11,23,23000,'2021-02-27','West'),(12,23,19000,'2021-03-30','West'), 
+(13,7,21000,'2021-04-05','North'),(14,8,29000,'2021-04-10','South'),(15,9,15000,'2021-04-15','East'), 
+(16,23,24000,'2021-04-20','West'),(17,7,17000,'2021-05-05','North'),(18,8,31000,'2021-05-10','South'), 
+(19,9,13000,'2021-05-15','East'),(20,23,26000,'2021-05-20','West'); 
+  
+ 
+ 
+0.2 department (5 rows) 
+DeptID DeptName Location Budget 
+1 Sales New York 500,000 
+2 Engineering San Francisco 1,200,000 
+3 Marketing Chicago 300,000 
+4 HR New York 150,000 
+5 Finance Boston 400,000 
+  
+0.3 employee (25 rows — sample shown) 
+EmpID Name DeptID JobTitle Salary ManagerID 
+1 John Smith 2 CEO 250,000 NULL 
+2 Mary Johnson 1 Sales Director 150,000 1 
+3 Robert Lee 2 Engineering Director 180,000 1 
+6 Linda White 5 Finance Director 160,000 1 
+12 Jessica Taylor 2 Senior Engineer 115,000 3 
+25 Matthew Walker 2 Principal Engineer 135,000 3 
+7 Tom Harris 1 Sales Rep 70,000 2 
+... (18 more rows)         
+  
+0.4 project (8 rows) 
+ProjectID ProjectName DeptID Budget StartDate 
+1 Website Redesign 2 200,000 2021-01-10 
+2 Mobile App 2 350,000 2020-05-01 
+3 Ad Campaign Q1 3 120,000 2021-02-15 
+4 Recruitment Drive 4 50,000 2021-03-01 
+5 Audit 2021 5 80,000 2021-01-05 
+6 Sales Expansion 1 150,000 2020-11-20 
+7 Data Migration 2 250,000 2019-09-01 
+8 Brand Refresh 3 90,000 2022-01-10 
+  
+0.5 employee_project & sales — samples 
+EmpID ProjectID HoursWorked 
+10 1 120 
+11 1 150 
+12 2 200 
+25 2 180 
+19 5 60 
+7 6 100 
+... (13 more rows)   
+  
+SaleID EmpID SaleAmount SaleDate Region 
+1 7 15,000 2021-01-05 North 
+4 8 25,000 2021-01-08 South 
+10 23 20,000 2021-01-22 West 
+18 8 31,000 2021-05-10 South 
+... (16 more 
+rows) 
+      
+Full INSERT statements are provided in Appendix A at the end of this document. 
+ 
+  
+1. Single Row Subqueries 
+A single-row subquery returns exactly one column and one row, so the 
+outer query can compare against it directly using =, >, <, >=, <=, or <>. 
+These are usually built with aggregate functions (MAX, MIN, AVG, 
+SUM, COUNT) or a WHERE clause specific enough to isolate one row. 
+General syntax: 
+SELECT columns FROM outer_table 
+WHERE column [=|>|<|>=|<=|<>] (SELECT single_value FROM inner_table [WHERE ...]); 
+  
+Basic Level  (10 questions) 
+Q1. Find employees who earn more than the average salary of all employees. 
+SELECT Name, Salary FROM employee WHERE Salary > (SELECT AVG(Salary) FROM employee); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Jessica Taylor 115000 
+Matthew Walker 135000 
+  
+Q2. Find employees who earn less than the average salary of all employees. 
+SELECT Name, Salary FROM employee WHERE Salary < (SELECT AVG(Salary) FROM employee); 
+Verified Result: 
+Name Salary 
+Tom Harris 70000 
+Nancy Davis 75000 
+Kevin Wilson 68000 
+Emily Clark 95000 
+Brian Moore 98000 
+Daniel Anderson 80000 
+Michelle Thomas 65000 
+Chris Jackson 67000 
+(showing first 8 of 17 rows) 
+  
+Q3. Find the employee(s) with the highest salary in the company. 
+SELECT Name, Salary FROM employee WHERE Salary = (SELECT MAX(Salary) FROM employee); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+  
+Q4. Find the employee(s) with the lowest salary in the company. 
+SELECT Name, Salary FROM employee WHERE Salary = (SELECT MIN(Salary) FROM employee); 
+Verified Result: 
+Name Salary 
+Steven Harris 58000 
+  
+Q5. Find departments whose budget is greater than the average department budget. 
+SELECT DeptName, Budget FROM department WHERE Budget > (SELECT AVG(Budget) FROM department); 
+Verified Result: 
+DeptName Budget 
+Engineering 1200000 
+  
+Q6. Find employee(s) who earn the same salary as 'Jessica Taylor' (excluding her). 
+SELECT Name, Salary FROM employee 
+WHERE Salary = (SELECT Salary FROM employee WHERE Name = 'Jessica Taylor') 
+  AND Name <> 'Jessica Taylor'; 
+Verified Result: 
+(no rows returned) 
+  
+Q7. Find projects whose budget is greater than the smallest project budget in the company. 
+SELECT ProjectName, Budget FROM project WHERE Budget > (SELECT MIN(Budget) FROM project); 
+Verified Result: 
+ProjectName Budget 
+Website Redesign 200000 
+Mobile App 350000 
+Ad Campaign Q1 120000 
+Audit 2021 80000 
+Sales Expansion 150000 
+Data Migration 250000 
+Brand Refresh 90000 
+  
+Q8. Find the name of the department that has the highest budget. 
+SELECT DeptName FROM department WHERE Budget = (SELECT MAX(Budget) FROM department); 
+Verified Result: 
+DeptName 
+Engineering 
+  
+Q9. Find the employee who was hired first (earliest HireDate) in the company. 
+SELECT Name, HireDate FROM employee WHERE HireDate = (SELECT MIN(HireDate) FROM employee); 
+Verified Result: 
+Name HireDate 
+John Smith 2010-01-15 
+  
+Q10. Find employees who are older than the average age of all employees. 
+SELECT Name, Age FROM employee WHERE Age > (SELECT AVG(Age) FROM employee); 
+Verified Result: 
+Name Age 
+John Smith 55 
+Mary Johnson 48 
+Robert Lee 50 
+Susan Kim 45 
+David Brown 42 
+Linda White 47 
+Jessica Taylor 36 
+Paul Thompson 38 
+(showing first 8 of 10 rows) 
+  
+Intermediate Level  (10 questions) 
+Q1. Find employees earning more than the average salary of the Engineering department. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > (SELECT AVG(Salary) FROM employee 
+            WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Engineering')); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+Matthew Walker 135000 
+  
+Q2. Find the name of the department with the highest total salary expenditure. 
+SELECT DeptName FROM department 
+WHERE DeptID = (SELECT DeptID FROM employee 
+             GROUP BY DeptID ORDER BY SUM(Salary) DESC LIMIT 1); 
+Verified Result: 
+DeptName 
+Engineering 
+  
+Q3. Find employees who earn more than employee 'Linda White' (EmpID 6). 
+SELECT Name, Salary FROM employee WHERE Salary > (SELECT Salary FROM employee WHERE EmpID = 6); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Robert Lee 180000 
+  
+Q4. Find the project with the highest budget among Engineering department projects. 
+SELECT ProjectName FROM project 
+WHERE Budget = (SELECT MAX(Budget) FROM project 
+            WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Engineering')); 
+Verified Result: 
+ProjectName 
+Mobile App 
+  
+Q5. For every employee above the company average salary, show how far above the average they are. 
+SELECT Name, Salary, 
+    Salary - (SELECT AVG(Salary) FROM employee) AS AboveAverage 
+FROM employee 
+WHERE Salary > (SELECT AVG(Salary) FROM employee); 
+Verified Result: 
+Name Salary AboveAverage 
+John Smith 250000 147600 
+Mary Johnson 150000 47600 
+Robert Lee 180000 77600 
+Susan Kim 140000 37600 
+David Brown 120000 17600 
+Linda White 160000 57600 
+Jessica Taylor 115000 12600 
+Matthew Walker 135000 32600 
+  
+Q6. Find department(s) located in the same city as the Sales department (excluding Sales itself). 
+SELECT DeptName, Location FROM department 
+WHERE Location = (SELECT Location FROM department WHERE DeptName = 'Sales') 
+  AND DeptName <> 'Sales'; 
+Verified Result: 
+DeptName Location 
+HR New York 
+  
+Q7. Find the employee who logged the highest total hours across all projects. 
+SELECT Name FROM employee 
+WHERE EmpID = (SELECT EmpID FROM employee_project 
+            GROUP BY EmpID ORDER BY SUM(HoursWorked) DESC LIMIT 1); 
+Verified Result: 
+Name 
+Jessica Taylor 
+  
+Q8. Find employees whose age equals the age of the oldest employee in the Sales department. 
+SELECT Name, Age FROM employee 
+WHERE Age = (SELECT MAX(Age) FROM employee 
+         WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Sales')); 
+Verified Result: 
+Name Age 
+Mary Johnson 48 
+  
+Q9. Find total sales recorded by the employee who made the single largest sale. 
+SELECT EmpID, SUM(SaleAmount) AS TotalSales FROM sales 
+WHERE EmpID = (SELECT EmpID FROM sales WHERE SaleAmount = (SELECT MAX(SaleAmount) FROM sales)) 
+GROUP BY EmpID; 
+Verified Result: 
+EmpID TotalSales 
+8 142000 
+  
+Q10. Find the employee whose salary is closest to (but not above) the overall average salary. 
+SELECT Name, Salary FROM employee 
+WHERE Salary = (SELECT MAX(Salary) FROM employee 
+            WHERE Salary <= (SELECT AVG(Salary) FROM employee)); 
+Verified Result: 
+Name Salary 
+Sophia Lewis 99000 
+  
+Advanced Level  (10 questions) 
+Q1. Find the manager of the employee who has the highest salary in the company. 
+SELECT Name AS ManagerName FROM employee 
+WHERE EmpID = (SELECT ManagerID FROM employee 
+           WHERE Salary = (SELECT MAX(Salary) FROM employee)); 
+Verified Result: 
+(no rows returned) 
+  
+Q2. Find departments whose average employee salary exceeds the company-wide average salary. 
+SELECT d.DeptName, AVG(e.Salary) AS AvgDeptSalary 
+FROM employee e JOIN department d ON e.DeptID = d.DeptID 
+GROUP BY d.DeptName 
+HAVING AVG(e.Salary) > (SELECT AVG(Salary) FROM employee); 
+Verified Result: 
+DeptName AvgDeptSalary 
+Engineering 131250 
+  
+Q3. Find employees managed by 'Mary Johnson' (ManagerID 2) who earn more than that team's own 
+average salary. 
+SELECT Name, Salary FROM employee 
+WHERE ManagerID = 2 
+  AND Salary > (SELECT AVG(Salary) FROM employee WHERE ManagerID = 2); 
+Verified Result: 
+Name Salary 
+Nancy Davis 75000 
+  
+Q4. Find the project name and department name for the single highest-budget project company-wide. 
+SELECT p.ProjectName, d.DeptName FROM project p JOIN department d ON p.DeptID = d.DeptID 
+WHERE p.Budget = (SELECT MAX(Budget) FROM project); 
+Verified Result: 
+ProjectName DeptName 
+Mobile App Engineering 
+  
+Q5. Show every department's budget alongside how far it is below the highest department budget. 
+SELECT DeptName, Budget, 
+    (SELECT MAX(Budget) FROM department) - Budget AS GapFromTop 
+FROM department ORDER BY GapFromTop; 
+Verified Result: 
+DeptName Budget GapFromTop 
+Engineering 1200000 0 
+Sales 500000 700000 
+Finance 400000 800000 
+Marketing 300000 900000 
+HR 150000 1050000 
+  
+Q6. Find employees who report to the manager with the highest total team salary. 
+SELECT Name FROM employee 
+WHERE ManagerID = (SELECT ManagerID FROM employee 
+                WHERE ManagerID IS NOT NULL 
+                GROUP BY ManagerID ORDER BY SUM(Salary) DESC LIMIT 1); 
+Verified Result: 
+Name 
+Mary Johnson 
+Robert Lee 
+Susan Kim 
+David Brown 
+Linda White 
+  
+Q7. Find the sales region with the highest total sales amount, and list every sale from it. 
+SELECT * FROM sales 
+WHERE Region = (SELECT Region FROM sales 
+            GROUP BY Region ORDER BY SUM(SaleAmount) DESC LIMIT 1); 
+Verified Result: 
+SaleID EmpID SaleAmount SaleDate Region 
+4 8 25000 2021-01-08 South 
+5 8 30000 2021-02-14 South 
+6 8 27000 2021-03-25 South 
+14 8 29000 2021-04-10 South 
+18 8 31000 2021-05-10 South 
+  
+Q8. Find the employee who earns the second-highest salary in the company. 
+SELECT Name, Salary FROM employee 
+WHERE Salary = (SELECT DISTINCT Salary FROM employee 
+            ORDER BY Salary DESC LIMIT 1 OFFSET 1); 
+Verified Result: 
+Name Salary 
+Robert Lee 180000 
+  
+Q9. Find all projects that started after the start date of the highest-budget project. 
+SELECT ProjectName, StartDate FROM project 
+WHERE StartDate > (SELECT StartDate FROM project 
+                WHERE Budget = (SELECT MAX(Budget) FROM project)); 
+Verified Result: 
+ProjectName StartDate 
+Website Redesign 2021-01-10 
+Ad Campaign Q1 2021-02-15 
+Recruitment Drive 2021-03-01 
+Audit 2021 2021-01-05 
+Sales Expansion 2020-11-20 
+Brand Refresh 2022-01-10 
+  
+Q10. Find departments whose total salary expenditure exceeds 50% of their own budget. 
+SELECT d.DeptName, SUM(e.Salary) AS TotalSalary, d.Budget 
+FROM employee e JOIN department d ON e.DeptID = d.DeptID 
+GROUP BY d.DeptName, d.Budget 
+HAVING SUM(e.Salary) > 0.5 * d.Budget; 
+Verified Result: 
+DeptName TotalSalary Budget 
+Engineering 1050000 1200000 
+Finance 405000 400000 
+HR 238000 150000 
+Marketing 433000 300000 
+Sales 434000 500000 
+  
+ 
+  
+2. Multi-Row Subqueries — ANY / SOME 
+ANY (and its synonym SOME) compares a value against a LIST of 
+values returned by the subquery. The condition is TRUE if it holds for 
+AT LEAST ONE row in that list. > ANY means 'greater than the 
+smallest value in the list'; < ANY means 'less than the largest value in 
+the list'. 
+General syntax: 
+SELECT columns FROM outer_table 
+WHERE column [=|>|<|>=|<=] ANY (SELECT column FROM inner_table [WHERE ...]); 
+  
+Basic Level  (10 questions) 
+Q1. Find employees who earn more than ANY (i.e. at least one) employee in the HR department. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ANY (SELECT Salary FROM employee 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'HR')); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Tom Harris 70000 
+Nancy Davis 75000 
+(showing first 8 of 24 rows) 
+  
+Q2. Find employees whose salary equals ANY salary found in the Engineering department (i.e. matches 
+at least one). 
+SELECT Name, Salary FROM employee 
+WHERE Salary = ANY (SELECT Salary FROM employee 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Engineering')); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Robert Lee 180000 
+Emily Clark 95000 
+Brian Moore 98000 
+Jessica Taylor 115000 
+Daniel Anderson 80000 
+Rachel Robinson 97000 
+Matthew Walker 135000 
+  
+Q3. Find departments whose budget is greater than SOME project budget (i.e. beats at least one 
+project). 
+SELECT DeptName, Budget FROM department WHERE Budget > SOME (SELECT Budget FROM project); 
+Verified Result: 
+DeptName Budget 
+Sales 500000 
+Engineering 1200000 
+Marketing 300000 
+HR 150000 
+Finance 400000 
+  
+Q4. Find employees who earn less than ANY salary in the Finance department. 
+SELECT Name, Salary FROM employee 
+WHERE Salary < ANY (SELECT Salary FROM employee 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Finance')); 
+Verified Result: 
+Name Salary 
+Mary Johnson 150000 
+Susan Kim 140000 
+David Brown 120000 
+Tom Harris 70000 
+Nancy Davis 75000 
+Kevin Wilson 68000 
+Emily Clark 95000 
+Brian Moore 98000 
+(showing first 8 of 22 rows) 
+  
+Q5. Find projects whose budget is greater than ANY project budget belonging to Marketing. 
+SELECT ProjectName, Budget FROM project 
+WHERE Budget > ANY (SELECT Budget FROM project 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Marketing')); 
+Verified Result: 
+ProjectName Budget 
+Website Redesign 200000 
+Mobile App 350000 
+Ad Campaign Q1 120000 
+Sales Expansion 150000 
+Data Migration 250000 
+  
+Q6. Find employees whose EmpID matches ANY EmpID recorded in the sales table (i.e. has made at 
+least one sale). 
+SELECT Name FROM employee WHERE EmpID = ANY (SELECT EmpID FROM sales); 
+Verified Result: 
+Name 
+Tom Harris 
+Nancy Davis 
+Kevin Wilson 
+Edward Clark 
+  
+Q7. Find sales amounts greater than ANY sale amount recorded in the 'East' region. 
+SELECT SaleID, SaleAmount, Region FROM sales 
+WHERE SaleAmount > ANY (SELECT SaleAmount FROM sales WHERE Region = 'East'); 
+Verified Result: 
+SaleID SaleAmount Region 
+1 15000 North 
+2 22000 North 
+3 18000 North 
+4 25000 South 
+5 30000 South 
+6 27000 South 
+8 14000 East 
+9 16000 East 
+(showing first 8 of 19 rows) 
+  
+Q8. Find employees older than ANY employee working in the Marketing department. 
+SELECT Name, Age FROM employee 
+WHERE Age > ANY (SELECT Age FROM employee 
+             WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Marketing')); 
+Verified Result: 
+Name Age 
+John Smith 55 
+Mary Johnson 48 
+Robert Lee 50 
+Susan Kim 45 
+David Brown 42 
+Linda White 47 
+Tom Harris 30 
+Nancy Davis 33 
+(showing first 8 of 24 rows) 
+  
+Q9. Find departments whose budget is greater than ANY department located in New York. 
+SELECT DeptName, Budget FROM department 
+WHERE Budget > ANY (SELECT Budget FROM department WHERE Location = 'New York'); 
+Verified Result: 
+DeptName Budget 
+Sales 500000 
+Engineering 1200000 
+Marketing 300000 
+Finance 400000 
+  
+Q10. Find employees hired later than ANY employee in the Sales department. 
+SELECT Name, HireDate FROM employee 
+WHERE HireDate > ANY (SELECT HireDate FROM employee 
+                   WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Sales')); 
+Verified Result: 
+Name HireDate 
+Susan Kim 2013-02-20 
+David Brown 2014-05-15 
+Linda White 2012-09-01 
+Tom Harris 2015-01-10 
+Nancy Davis 2016-04-12 
+Kevin Wilson 2018-07-23 
+Emily Clark 2015-03-01 
+Brian Moore 2016-08-15 
+(showing first 8 of 20 rows) 
+  
+Intermediate Level  (10 questions) 
+Q1. Find employees who earn more than ANY manager's salary (any DeptID Director-level employee, 
+i.e. rows with ManagerID = 1). 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ANY (SELECT Salary FROM employee WHERE ManagerID = 1); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+Matthew Walker 135000 
+  
+Q2. Find projects whose budget exceeds ANY project that started before 2021. 
+SELECT ProjectName, Budget FROM project 
+WHERE Budget > ANY (SELECT Budget FROM project WHERE StartDate < '2021-01-01'); 
+Verified Result: 
+ProjectName Budget 
+Website Redesign 200000 
+Mobile App 350000 
+Data Migration 250000 
+  
+Q3. Find employees whose salary is greater than ANY salary among employees who worked on the 
+'Mobile App' project. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ANY (SELECT e.Salary FROM employee e 
+                 JOIN employee_project ep ON e.EmpID = ep.EmpID 
+                 JOIN project p ON ep.ProjectID = p.ProjectID 
+                 WHERE p.ProjectName = 'Mobile App'); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Matthew Walker 135000 
+  
+Q4. Find employees whose Region-matched sales total is greater than ANY single sale made in the 'West' 
+region. 
+SELECT DISTINCT e.Name FROM employee e JOIN sales s ON e.EmpID = s.EmpID 
+WHERE s.SaleAmount > ANY (SELECT SaleAmount FROM sales WHERE Region = 'West'); 
+Verified Result: 
+Name 
+Tom Harris 
+Nancy Davis 
+Edward Clark 
+  
+Q5. Find departments whose budget is greater than ANY department's average employee salary times 3. 
+SELECT DeptName FROM department d 
+WHERE d.Budget > ANY (SELECT AVG(Salary) * 3 FROM employee GROUP BY DeptID); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+Marketing 
+Finance 
+  
+Q6. Find employees whose age is greater than ANY age among employees hired before 2015. 
+SELECT Name, Age FROM employee 
+WHERE Age > ANY (SELECT Age FROM employee WHERE HireDate < '2015-01-01'); 
+Verified Result: 
+Name Age 
+John Smith 55 
+Mary Johnson 48 
+Robert Lee 50 
+Susan Kim 45 
+David Brown 42 
+Linda White 47 
+Paul Thompson 38 
+Sophia Lewis 40 
+(showing first 8 of 9 rows) 
+  
+Q7. Find sales rows whose amount is greater than ANY sale made by 'Tom Harris'. 
+SELECT SaleID, SaleAmount FROM sales 
+WHERE SaleAmount > ANY (SELECT SaleAmount FROM sales 
+                     WHERE EmpID = (SELECT EmpID FROM employee WHERE Name = 'Tom Harris')); 
+Verified Result: 
+SaleID SaleAmount 
+2 22000 
+3 18000 
+4 25000 
+5 30000 
+6 27000 
+9 16000 
+10 20000 
+11 23000 
+(showing first 8 of 15 rows) 
+  
+Q8. Find projects whose budget is greater than ANY project run by the Engineering department. 
+SELECT ProjectName, Budget, DeptID FROM project 
+WHERE Budget > ANY (SELECT Budget FROM project 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Engineering')) 
+  AND DeptID <> (SELECT DeptID FROM department WHERE DeptName = 'Engineering'); 
+Verified Result: 
+(no rows returned) 
+  
+Q9. Find employees whose salary is greater than ANY salary drawn by employees working on projects 
+with budget above 200000. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ANY (SELECT e.Salary FROM employee e 
+                 JOIN employee_project ep ON e.EmpID = ep.EmpID 
+                 JOIN project p ON ep.ProjectID = p.ProjectID 
+                 WHERE p.Budget > 200000); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Brian Moore 98000 
+Jessica Taylor 115000 
+(showing first 8 of 10 rows) 
+  
+Q10. Find employees whose hire year matches ANY hire year among Engineering department 
+employees. 
+SELECT Name, HireDate FROM employee 
+WHERE substr(HireDate,1,4) = ANY (SELECT substr(HireDate,1,4) FROM employee 
+                               WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Engineering')); 
+Verified Result: 
+Name HireDate 
+John Smith 2010-01-15 
+Robert Lee 2011-06-01 
+Susan Kim 2013-02-20 
+Tom Harris 2015-01-10 
+Nancy Davis 2016-04-12 
+Emily Clark 2015-03-01 
+Brian Moore 2016-08-15 
+Jessica Taylor 2013-11-05 
+(showing first 8 of 16 rows) 
+  
+Advanced Level  (10 questions) 
+Q1. Find employees whose salary is greater than ANY department's average salary (i.e. beats at least 
+one department average). 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ANY (SELECT AVG(Salary) FROM employee GROUP BY DeptID); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Emily Clark 95000 
+Brian Moore 98000 
+(showing first 8 of 15 rows) 
+  
+Q2. Find managers (employees who appear as a ManagerID) whose team headcount is greater than 
+ANY other manager's team headcount. 
+SELECT Name FROM employee 
+WHERE EmpID IN (SELECT ManagerID FROM employee WHERE ManagerID IS NOT NULL) 
+  AND (SELECT COUNT(*) FROM employee e2 WHERE e2.ManagerID = employee.EmpID) 
+   > ANY (SELECT COUNT(*) FROM employee GROUP BY ManagerID); 
+Verified Result: 
+Name 
+John Smith 
+Mary Johnson 
+Robert Lee 
+Susan Kim 
+Linda White 
+  
+Q3. Find projects whose budget beats ANY project's budget from a department whose own budget 
+exceeds 300000. 
+SELECT ProjectName, Budget FROM project 
+WHERE Budget > ANY (SELECT p2.Budget FROM project p2 
+                 JOIN department d ON p2.DeptID = d.DeptID 
+                 WHERE d.Budget > 300000); 
+Verified Result: 
+ProjectName Budget 
+Website Redesign 200000 
+Mobile App 350000 
+Ad Campaign Q1 120000 
+Sales Expansion 150000 
+Data Migration 250000 
+Brand Refresh 90000 
+  
+Q4. Find employees whose total logged project hours exceed ANY single employee's total hours in the 
+Engineering department. 
+SELECT e.Name, SUM(ep.HoursWorked) AS TotalHours FROM employee e JOIN employee_project ep ON e.EmpID = 
+ep.EmpID 
+GROUP BY e.Name 
+HAVING SUM(ep.HoursWorked) > ANY (SELECT SUM(ep2.HoursWorked) FROM employee_project ep2 
+                               JOIN employee e2 ON ep2.EmpID = e2.EmpID 
+                               WHERE e2.DeptID = (SELECT DeptID FROM department WHERE DeptName='Engineering') 
+                               GROUP BY e2.EmpID); 
+Verified Result: 
+Name TotalHours 
+Brian Moore 150 
+Emily Clark 120 
+Jessica Taylor 200 
+Matthew Walker 180 
+Rachel Robinson 100 
+Tom Harris 100 
+  
+Q5. Find sales reps whose total sales exceed ANY other sales rep's total sales. 
+SELECT e.Name, SUM(s.SaleAmount) AS TotalSales FROM employee e JOIN sales s ON e.EmpID = s.EmpID 
+GROUP BY e.Name 
+HAVING SUM(s.SaleAmount) > ANY (SELECT SUM(s2.SaleAmount) FROM sales s2 GROUP BY s2.EmpID); 
+Verified Result: 
+Name TotalSales 
+Edward Clark 112000 
+Nancy Davis 142000 
+Tom Harris 93000 
+  
+Q6. Find departments whose total employee salary is greater than ANY single project's budget in the 
+company. 
+SELECT d.DeptName, SUM(e.Salary) AS TotalSalary FROM department d JOIN employee e ON d.DeptID = e.DeptID 
+GROUP BY d.DeptName 
+HAVING SUM(e.Salary) > ANY (SELECT Budget FROM project); 
+Verified Result: 
+DeptName TotalSalary 
+Engineering 1050000 
+Finance 405000 
+HR 238000 
+Marketing 433000 
+Sales 434000 
+  
+Q7. Find employees earning more than ANY salary among employees who work on more than one 
+project. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ANY (SELECT e.Salary FROM employee e 
+                 WHERE e.EmpID IN (SELECT EmpID FROM employee_project 
+                                   GROUP BY EmpID HAVING COUNT(*) > 1)); 
+Verified Result: 
+(no rows returned) 
+  
+Q8. Find regions whose average sale amount is greater than ANY individual sale made in the 'East' 
+region. 
+SELECT Region, AVG(SaleAmount) AS AvgSale FROM sales 
+GROUP BY Region 
+HAVING AVG(SaleAmount) > ANY (SELECT SaleAmount FROM sales WHERE Region = 'East'); 
+Verified Result: 
+Region AvgSale 
+East 14000 
+North 18600 
+South 28400 
+West 22400 
+  
+Q9. Find employees whose salary is greater than ANY salary among employees hired in the same year as 
+'Robert Lee'. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ANY (SELECT Salary FROM employee 
+                 WHERE substr(HireDate,1,4) = (SELECT substr(HireDate,1,4) FROM employee WHERE Name='Robert Lee')); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+  
+Q10. Find projects whose budget-per-assigned-employee is greater than ANY department's average 
+salary. 
+SELECT p.ProjectName, p.Budget / COUNT(ep.EmpID) AS BudgetPerHead FROM project p 
+JOIN employee_project ep ON p.ProjectID = ep.ProjectID 
+GROUP BY p.ProjectName, p.Budget 
+HAVING p.Budget / COUNT(ep.EmpID) > ANY (SELECT AVG(Salary) FROM employee GROUP BY DeptID); 
+Verified Result: 
+ProjectName BudgetPerHead 
+Brand Refresh 90000 
+Data Migration 250000 
+Mobile App 175000 
+  
+ 
+  
+3. Multi-Row Subqueries — ALL 
+ALL compares a value against every row returned by the subquery. The 
+condition is TRUE only if it holds for EVERY row. > ALL means 
+'greater than the largest value in the list'; < ALL means 'less than the 
+smallest value in the list'. 
+General syntax: 
+SELECT columns FROM outer_table 
+WHERE column [=|>|<|>=|<=|<>] ALL (SELECT column FROM inner_table [WHERE ...]); 
+  
+Basic Level  (10 questions) 
+Q1. Find employees who earn more than ALL employees in the HR department. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ALL (SELECT Salary FROM employee 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'HR')); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+Matthew Walker 135000 
+  
+Q2. Find employees who earn less than ALL employees in the Engineering department. 
+SELECT Name, Salary FROM employee 
+WHERE Salary < ALL (SELECT Salary FROM employee 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Engineering')); 
+Verified Result: 
+Name Salary 
+Tom Harris 70000 
+Nancy Davis 75000 
+Kevin Wilson 68000 
+Michelle Thomas 65000 
+Chris Jackson 67000 
+Amanda White 62000 
+Steven Harris 58000 
+Laura Martin 60000 
+(showing first 8 of 10 rows) 
+  
+Q3. Find departments whose budget is greater than ALL project budgets in the company. 
+SELECT DeptName, Budget FROM department WHERE Budget > ALL (SELECT Budget FROM project); 
+Verified Result: 
+DeptName Budget 
+Sales 500000 
+Engineering 1200000 
+Finance 400000 
+  
+Q4. Find employees whose salary is not equal to ALL salaries in the Sales department (i.e. matches none 
+of them). 
+SELECT Name, Salary FROM employee 
+WHERE Salary <> ALL (SELECT Salary FROM employee 
+                  WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Sales')); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Emily Clark 95000 
+Brian Moore 98000 
+Jessica Taylor 115000 
+(showing first 8 of 20 rows) 
+  
+Q5. Find projects whose budget is greater than ALL projects belonging to the Marketing department. 
+SELECT ProjectName, Budget FROM project 
+WHERE Budget > ALL (SELECT Budget FROM project 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Marketing')); 
+Verified Result: 
+ProjectName Budget 
+Website Redesign 200000 
+Mobile App 350000 
+Sales Expansion 150000 
+Data Migration 250000 
+  
+Q6. Find employees older than ALL employees in the Marketing department. 
+SELECT Name, Age FROM employee 
+WHERE Age > ALL (SELECT Age FROM employee 
+             WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Marketing')); 
+Verified Result: 
+Name Age 
+John Smith 55 
+Mary Johnson 48 
+Robert Lee 50 
+Linda White 47 
+  
+Q7. Find sale amounts greater than ALL sale amounts recorded in the 'East' region. 
+SELECT SaleID, SaleAmount, Region FROM sales 
+WHERE SaleAmount > ALL (SELECT SaleAmount FROM sales WHERE Region = 'East'); 
+Verified Result: 
+SaleID SaleAmount Region 
+2 22000 North 
+3 18000 North 
+4 25000 South 
+5 30000 South 
+6 27000 South 
+10 20000 West 
+11 23000 West 
+12 19000 West 
+(showing first 8 of 14 rows) 
+  
+Q8. Find departments whose budget is greater than ALL departments located in New York. 
+SELECT DeptName, Budget FROM department 
+WHERE Budget > ALL (SELECT Budget FROM department WHERE Location = 'New York'); 
+Verified Result: 
+DeptName Budget 
+Engineering 1200000 
+  
+Q9. Find employees hired later than ALL employees in the Finance department. 
+SELECT Name, HireDate FROM employee 
+WHERE HireDate > ALL (SELECT HireDate FROM employee 
+                   WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Finance')); 
+Verified Result: 
+Name HireDate 
+Rachel Robinson 2020-01-15 
+Edward Clark 2020-06-10 
+  
+Q10. Find employees whose salary is less than ALL Director-level salaries (ManagerID IS NULL, i.e. the 
+CEO, excluded — directors report to EmpID 1). 
+SELECT Name, Salary FROM employee 
+WHERE Salary < ALL (SELECT Salary FROM employee WHERE ManagerID = 1); 
+Verified Result: 
+Name Salary 
+Tom Harris 70000 
+Nancy Davis 75000 
+Kevin Wilson 68000 
+Emily Clark 95000 
+Brian Moore 98000 
+Jessica Taylor 115000 
+Daniel Anderson 80000 
+Michelle Thomas 65000 
+(showing first 8 of 18 rows) 
+  
+Intermediate Level  (10 questions) 
+Q1. Find employees whose salary is greater than ALL average departmental salaries (beats every 
+department average). 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ALL (SELECT AVG(Salary) FROM employee GROUP BY DeptID); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+Matthew Walker 135000 
+  
+Q2. Find projects whose budget is greater than ALL projects that started before 2021. 
+SELECT ProjectName, Budget FROM project 
+WHERE Budget > ALL (SELECT Budget FROM project WHERE StartDate < '2021-01-01'); 
+Verified Result: 
+(no rows returned) 
+  
+Q3. Find employees whose salary is greater than ALL salaries among employees who worked on the 
+'Mobile App' project. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ALL (SELECT e.Salary FROM employee e 
+                 JOIN employee_project ep ON e.EmpID = ep.EmpID 
+                 JOIN project p ON ep.ProjectID = p.ProjectID 
+                 WHERE p.ProjectName = 'Mobile App'); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+  
+Q4. Find sales whose amount is greater than ALL sales made in the 'West' region. 
+SELECT SaleID, SaleAmount FROM sales WHERE SaleAmount > ALL (SELECT SaleAmount FROM sales WHERE 
+Region = 'West'); 
+Verified Result: 
+SaleID SaleAmount 
+5 30000 
+6 27000 
+14 29000 
+18 31000 
+  
+Q5. Find departments whose budget is greater than ALL department average salaries multiplied by 3. 
+SELECT DeptName FROM department d 
+WHERE d.Budget > ALL (SELECT AVG(Salary) * 3 FROM employee GROUP BY DeptID); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+Finance 
+  
+Q6. Find employees whose age is greater than ALL ages among employees hired before 2015. 
+SELECT Name, Age FROM employee WHERE Age > ALL (SELECT Age FROM employee WHERE HireDate < 
+'2015-01-01'); 
+Verified Result: 
+(no rows returned) 
+  
+Q7. Find sales greater than ALL sales made by 'Tom Harris'. 
+SELECT SaleID, SaleAmount FROM sales 
+WHERE SaleAmount > ALL (SELECT SaleAmount FROM sales 
+                     WHERE EmpID = (SELECT EmpID FROM employee WHERE Name = 'Tom Harris')); 
+Verified Result: 
+SaleID SaleAmount 
+4 25000 
+5 30000 
+6 27000 
+11 23000 
+14 29000 
+16 24000 
+18 31000 
+20 26000 
+  
+Q8. Find projects (outside Engineering) whose budget beats ALL Engineering department project 
+budgets. 
+SELECT ProjectName, Budget FROM project 
+WHERE Budget > ALL (SELECT Budget FROM project 
+                 WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Engineering')) 
+  AND DeptID <> (SELECT DeptID FROM department WHERE DeptName = 'Engineering'); 
+Verified Result: 
+(no rows returned) 
+  
+Q9. Find employees whose salary beats ALL salaries of employees assigned to projects with budget 
+above 200000. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ALL (SELECT e.Salary FROM employee e 
+                 JOIN employee_project ep ON e.EmpID = ep.EmpID 
+                 JOIN project p ON ep.ProjectID = p.ProjectID 
+                 WHERE p.Budget > 200000); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+  
+Q10. Find employees whose salary is not equal to ALL salaries earned by Finance department 
+employees. 
+SELECT Name, Salary FROM employee 
+WHERE Salary <> ALL (SELECT Salary FROM employee 
+                  WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Finance')); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Tom Harris 70000 
+Nancy Davis 75000 
+Kevin Wilson 68000 
+(showing first 8 of 21 rows) 
+  
+Advanced Level  (10 questions) 
+Q1. Find the department(s) whose minimum employee salary is still greater than ALL salaries in the HR 
+department. 
+SELECT d.DeptName, MIN(e.Salary) AS DeptMinSalary FROM department d JOIN employee e ON d.DeptID = e.DeptID 
+GROUP BY d.DeptName 
+HAVING MIN(e.Salary) > ALL (SELECT Salary FROM employee 
+                         WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'HR')); 
+Verified Result: 
+(no rows returned) 
+  
+Q2. Find managers whose team's lowest salary is still greater than ALL salaries paid to individual Sales 
+reps. 
+SELECT ManagerID, MIN(Salary) AS TeamMinSalary FROM employee 
+WHERE ManagerID IS NOT NULL 
+GROUP BY ManagerID 
+HAVING MIN(Salary) > ALL (SELECT Salary FROM employee 
+                       WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName='Sales') 
+                         AND ManagerID IS NOT NULL); 
+Verified Result: 
+(no rows returned) 
+  
+Q3. Find projects whose budget beats ALL projects run by departments whose own budget is under 
+300000. 
+SELECT ProjectName, Budget FROM project 
+WHERE Budget > ALL (SELECT p2.Budget FROM project p2 
+                 JOIN department d ON p2.DeptID = d.DeptID 
+                 WHERE d.Budget < 300000); 
+Verified Result: 
+ProjectName Budget 
+Website Redesign 200000 
+Mobile App 350000 
+Ad Campaign Q1 120000 
+Audit 2021 80000 
+Sales Expansion 150000 
+Data Migration 250000 
+Brand Refresh 90000 
+  
+Q4. Find the employee(s) whose total logged project hours exceed ALL individual employees' total hours 
+in the Marketing department. 
+SELECT e.Name, SUM(ep.HoursWorked) AS TotalHours FROM employee e JOIN employee_project ep ON e.EmpID = 
+ep.EmpID 
+GROUP BY e.Name 
+HAVING SUM(ep.HoursWorked) > ALL (SELECT SUM(ep2.HoursWorked) FROM employee_project ep2 
+                               JOIN employee e2 ON ep2.EmpID = e2.EmpID 
+                               WHERE e2.DeptID = (SELECT DeptID FROM department WHERE DeptName='Marketing') 
+                               GROUP BY e2.EmpID); 
+Verified Result: 
+Name TotalHours 
+Brian Moore 150 
+Daniel Anderson 90 
+Emily Clark 120 
+Jessica Taylor 200 
+Matthew Walker 180 
+Nancy Davis 90 
+Rachel Robinson 100 
+Tom Harris 100 
+  
+Q5. Find the sales rep(s) whose total sales exceed ALL other sales reps' totals (i.e. the top performer(s)). 
+SELECT e.Name, SUM(s.SaleAmount) AS TotalSales FROM employee e JOIN sales s ON e.EmpID = s.EmpID 
+GROUP BY e.Name 
+HAVING SUM(s.SaleAmount) > ALL (SELECT SUM(s2.SaleAmount) FROM sales s2 
+                             WHERE s2.EmpID <> e.EmpID GROUP BY s2.EmpID); 
+Verified Result: 
+Name TotalSales 
+Nancy Davis 142000 
+  
+Q6. Find departments whose total salary expenditure exceeds ALL individual project budgets in the 
+company. 
+SELECT d.DeptName, SUM(e.Salary) AS TotalSalary FROM department d JOIN employee e ON d.DeptID = e.DeptID 
+GROUP BY d.DeptName 
+HAVING SUM(e.Salary) > ALL (SELECT Budget FROM project); 
+Verified Result: 
+DeptName TotalSalary 
+Engineering 1050000 
+Finance 405000 
+Marketing 433000 
+Sales 434000 
+  
+Q7. Find employees whose salary beats ALL salaries among employees who work on more than one 
+project. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ALL (SELECT e.Salary FROM employee e 
+                 WHERE e.EmpID IN (SELECT EmpID FROM employee_project 
+                                   GROUP BY EmpID HAVING COUNT(*) > 1)); 
+Verified Result: 
+(no rows returned) 
+  
+Q8. Find the region whose average sale amount beats ALL individual sales made in the 'East' region. 
+SELECT Region, AVG(SaleAmount) AS AvgSale FROM sales 
+GROUP BY Region 
+HAVING AVG(SaleAmount) > ALL (SELECT SaleAmount FROM sales WHERE Region = 'East'); 
+Verified Result: 
+Region AvgSale 
+North 18600 
+South 28400 
+West 22400 
+  
+Q9. Find employees whose salary beats ALL salaries among employees hired in the same year as 'Robert 
+Lee'. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > ALL (SELECT Salary FROM employee 
+                 WHERE substr(HireDate,1,4) = (SELECT substr(HireDate,1,4) FROM employee WHERE Name='Robert Lee')); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+  
+Q10. Find projects whose budget-per-assigned-employee beats ALL departments' average salaries. 
+SELECT p.ProjectName, p.Budget / COUNT(ep.EmpID) AS BudgetPerHead FROM project p 
+JOIN employee_project ep ON p.ProjectID = ep.ProjectID 
+GROUP BY p.ProjectName, p.Budget 
+HAVING p.Budget / COUNT(ep.EmpID) > ALL (SELECT AVG(Salary) FROM employee GROUP BY DeptID); 
+Verified Result: 
+ProjectName BudgetPerHead 
+Data Migration 250000 
+Mobile App 175000 
+  
+ 
+  
+4. Nested Subqueries 
+A nested subquery is a subquery inside another subquery — the 
+inner-most query resolves first, its result feeds the next level up, and so 
+on, until the outermost query runs last. These subqueries usually do 
+NOT reference the outer query's columns (uncorrelated). 
+General syntax: 
+SELECT columns FROM t1 
+WHERE col IN (SELECT col FROM t2 
+           WHERE col2 IN (SELECT col2 FROM t3 WHERE ...)); 
+  
+Basic Level  (10 questions) 
+Q1. Find employees who work in the same department as 'Emily Clark' (nested: name -> DeptID -> 
+employees). 
+SELECT Name FROM employee 
+WHERE DeptID = (SELECT DeptID FROM employee WHERE Name = 'Emily Clark') 
+  AND Name <> 'Emily Clark'; 
+Verified Result: 
+Name 
+John Smith 
+Robert Lee 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Rachel Robinson 
+Matthew Walker 
+  
+Q2. Find employees who worked on any project run by the Engineering department (nested: dept -> 
+projects -> employee_project -> employees). 
+SELECT DISTINCT e.Name FROM employee e 
+WHERE e.EmpID IN (SELECT EmpID FROM employee_project 
+               WHERE ProjectID IN (SELECT ProjectID FROM project 
+                                   WHERE DeptID = (SELECT DeptID FROM department WHERE 
+DeptName='Engineering'))); 
+Verified Result: 
+Name 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Rachel Robinson 
+Matthew Walker 
+  
+Q3. Find employees who made a sale in the region where 'Tom Harris' sells (nested: employee -> sales -> 
+region -> sales -> employees). 
+SELECT DISTINCT e.Name FROM employee e 
+WHERE e.EmpID IN (SELECT EmpID FROM sales 
+               WHERE Region = (SELECT Region FROM sales 
+                               WHERE EmpID = (SELECT EmpID FROM employee WHERE Name = 'Tom Harris') 
+                               LIMIT 1)); 
+Verified Result: 
+Name 
+Tom Harris 
+  
+Q4. Find departments that have at least one project (nested: department -> project). 
+SELECT DeptName FROM department 
+WHERE DeptID IN (SELECT DeptID FROM project); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+Marketing 
+HR 
+Finance 
+  
+Q5. Find employees who do NOT appear in the employee_project table (never assigned to a project). 
+SELECT Name FROM employee 
+WHERE EmpID NOT IN (SELECT EmpID FROM employee_project); 
+Verified Result: 
+Name 
+John Smith 
+Mary Johnson 
+Robert Lee 
+Susan Kim 
+David Brown 
+Linda White 
+  
+Q6. Find the department name of the employee who earns the highest salary (nested: employee -> 
+DeptID -> department). 
+SELECT DeptName FROM department 
+WHERE DeptID = (SELECT DeptID FROM employee 
+            WHERE Salary = (SELECT MAX(Salary) FROM employee)); 
+Verified Result: 
+DeptName 
+Engineering 
+  
+Q7. Find projects run by departments located in 'New York' (nested: department -> DeptID -> project). 
+SELECT ProjectName FROM project 
+WHERE DeptID IN (SELECT DeptID FROM department WHERE Location = 'New York'); 
+Verified Result: 
+ProjectName 
+Recruitment Drive 
+Sales Expansion 
+  
+Q8. Find employees who share a manager with 'Emily Clark' (nested: name -> ManagerID -> 
+employees). 
+SELECT Name FROM employee 
+WHERE ManagerID = (SELECT ManagerID FROM employee WHERE Name = 'Emily Clark') 
+  AND Name <> 'Emily Clark'; 
+Verified Result: 
+Name 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Rachel Robinson 
+Matthew Walker 
+  
+Q9. Find sales made by employees who work in the Sales department (nested: department -> employee -> sales). 
+SELECT * FROM sales 
+WHERE EmpID IN (SELECT EmpID FROM employee 
+            WHERE DeptID = (SELECT DeptID FROM department WHERE DeptName = 'Sales')); 
+Verified Result: 
+SaleID EmpID SaleAmount SaleDate Region 
+1 7 15000 2021-01-05 North 
+2 7 22000 2021-02-11 North 
+3 7 18000 2021-03-20 North 
+4 8 25000 2021-01-08 South 
+5 8 30000 2021-02-14 South 
+6 8 27000 2021-03-25 South 
+7 9 12000 2021-01-15 East 
+8 9 14000 2021-02-19 East 
+(showing first 8 of 20 rows) 
+  
+Q10. Find employees who are NOT managers (never appear as someone else's ManagerID). 
+SELECT Name FROM employee 
+WHERE EmpID NOT IN (SELECT ManagerID FROM employee WHERE ManagerID IS NOT NULL); 
+Verified Result: 
+Name 
+Tom Harris 
+Nancy Davis 
+Kevin Wilson 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Michelle Thomas 
+(showing first 8 of 19 rows) 
+  
+Intermediate Level  (10 questions) 
+Q1. Find employees who work in a department whose budget is above the company's average 
+department budget (3-level nesting: employee -> department -> aggregate). 
+SELECT Name FROM employee 
+WHERE DeptID IN (SELECT DeptID FROM department 
+              WHERE Budget > (SELECT AVG(Budget) FROM department)); 
+Verified Result: 
+Name 
+John Smith 
+Robert Lee 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Rachel Robinson 
+Matthew Walker 
+  
+Q2. Find employees who worked on the project with the highest budget in the entire company (project -> project -> employee_project -> employee). 
+SELECT e.Name FROM employee e 
+WHERE e.EmpID IN (SELECT EmpID FROM employee_project 
+               WHERE ProjectID = (SELECT ProjectID FROM project 
+                                  WHERE Budget = (SELECT MAX(Budget) FROM project))); 
+Verified Result: 
+Name 
+Jessica Taylor 
+Matthew Walker 
+  
+Q3. Find employees whose department runs a project that started before 2020 (department -> project -> 
+employee). 
+SELECT Name FROM employee 
+WHERE DeptID IN (SELECT DeptID FROM project WHERE StartDate < '2020-01-01'); 
+Verified Result: 
+Name 
+John Smith 
+Robert Lee 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Rachel Robinson 
+Matthew Walker 
+  
+Q4. Find departments that have NO projects with a budget over 200000 (nested NOT IN). 
+SELECT DeptName FROM department 
+WHERE DeptID NOT IN (SELECT DeptID FROM project WHERE Budget > 200000); 
+Verified Result: 
+DeptName 
+Sales 
+Marketing 
+HR 
+Finance 
+  
+Q5. Find employees who earn more than the average salary of employees who worked on at least one 
+project. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > (SELECT AVG(Salary) FROM employee 
+            WHERE EmpID IN (SELECT DISTINCT EmpID FROM employee_project)); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Emily Clark 95000 
+Brian Moore 98000 
+(showing first 8 of 14 rows) 
+  
+Q6. Find the names of employees who work in the department that runs the project 'Data Migration'. 
+SELECT Name FROM employee 
+WHERE DeptID = (SELECT DeptID FROM project WHERE ProjectName = 'Data Migration'); 
+Verified Result: 
+Name 
+John Smith 
+Robert Lee 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Rachel Robinson 
+Matthew Walker 
+  
+Q7. Find sales made by employees whose manager is the Sales Director (nested: employee -> ManagerID -> title -> employee -> sales). 
+SELECT * FROM sales 
+WHERE EmpID IN (SELECT EmpID FROM employee 
+            WHERE ManagerID = (SELECT EmpID FROM employee WHERE JobTitle = 'Sales Director')); 
+Verified Result: 
+SaleID EmpID SaleAmount SaleDate Region 
+1 7 15000 2021-01-05 North 
+2 7 22000 2021-02-11 North 
+3 7 18000 2021-03-20 North 
+4 8 25000 2021-01-08 South 
+5 8 30000 2021-02-14 South 
+6 8 27000 2021-03-25 South 
+7 9 12000 2021-01-15 East 
+8 9 14000 2021-02-19 East 
+(showing first 8 of 20 rows) 
+  
+Q8. Find projects run by a department whose director earns more than 150000 (department -> 
+employee(director) -> project). 
+SELECT ProjectName FROM project 
+WHERE DeptID IN (SELECT DeptID FROM employee 
+              WHERE JobTitle LIKE '%Director%' AND Salary > 150000); 
+Verified Result: 
+ProjectName 
+Website Redesign 
+Mobile App 
+Audit 2021 
+Data Migration 
+  
+Q9. Find employees who are NOT assigned to any project run by their own department (i.e., work in a 
+dept with projects, but aren't on any of them). 
+SELECT Name FROM employee e 
+WHERE e.DeptID IN (SELECT DeptID FROM project) 
+  AND e.EmpID NOT IN (SELECT ep.EmpID FROM employee_project ep 
+                   JOIN project p ON ep.ProjectID = p.ProjectID 
+                   WHERE p.DeptID = e.DeptID); 
+Verified Result: 
+Name 
+John Smith 
+Mary Johnson 
+Robert Lee 
+Susan Kim 
+David Brown 
+Linda White 
+  
+Q10. Find the department(s) whose employees have, in total, logged more project hours than the 
+Marketing department's employees. 
+SELECT d.DeptName FROM department d 
+WHERE (SELECT SUM(ep.HoursWorked) FROM employee_project ep 
+    JOIN employee e ON ep.EmpID = e.EmpID WHERE e.DeptID = d.DeptID) 
+   > (SELECT SUM(ep2.HoursWorked) FROM employee_project ep2 
+      JOIN employee e2 ON ep2.EmpID = e2.EmpID 
+      WHERE e2.DeptID = (SELECT DeptID FROM department WHERE DeptName='Marketing')); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+  
+Advanced Level  (10 questions) 
+Q1. Find employees who earn more than the average salary of employees in whichever department has 
+the highest total project budget (4-level nesting). 
+SELECT Name, Salary FROM employee 
+WHERE Salary > (SELECT AVG(Salary) FROM employee 
+            WHERE DeptID = (SELECT DeptID FROM project 
+                            GROUP BY DeptID 
+                            ORDER BY SUM(Budget) DESC LIMIT 1)); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+Matthew Walker 135000 
+  
+Q2. Find employees who work on projects belonging to the department with the highest average 
+employee salary. 
+SELECT DISTINCT e.Name FROM employee e 
+WHERE e.EmpID IN (SELECT EmpID FROM employee_project 
+               WHERE ProjectID IN (SELECT ProjectID FROM project 
+                                   WHERE DeptID = (SELECT DeptID FROM employee 
+                                                      GROUP BY DeptID 
+                                                      ORDER BY AVG(Salary) DESC LIMIT 1))); 
+Verified Result: 
+Name 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Rachel Robinson 
+Matthew Walker 
+  
+Q3. Find departments where every project has a budget greater than the company-wide average project 
+budget (nested NOT EXISTS-style using NOT IN). 
+SELECT DeptName FROM department d 
+WHERE DeptID IN (SELECT DeptID FROM project) 
+  AND DeptID NOT IN (SELECT DeptID FROM project 
+                  WHERE Budget <= (SELECT AVG(Budget) FROM project)); 
+Verified Result: 
+DeptName 
+Engineering 
+  
+Q4. Find the employee(s) who logged the most hours on the project with the highest 
+budget-per-employee ratio. 
+SELECT e.Name, ep.HoursWorked FROM employee e JOIN employee_project ep ON e.EmpID = ep.EmpID 
+WHERE ep.ProjectID = (SELECT p.ProjectID FROM project p JOIN employee_project ep2 ON p.ProjectID = ep2.ProjectID 
+                   GROUP BY p.ProjectID, p.Budget 
+                   ORDER BY p.Budget * 1.0 / COUNT(ep2.EmpID) DESC LIMIT 1) 
+ORDER BY ep.HoursWorked DESC LIMIT 1; 
+Verified Result: 
+Name HoursWorked 
+Rachel Robinson 100 
+  
+Q5. Find employees whose salary exceeds the average salary of employees who work in departments 
+located in the same city as the department with the highest budget. 
+SELECT Name, Salary FROM employee 
+WHERE Salary > (SELECT AVG(Salary) FROM employee 
+            WHERE DeptID IN (SELECT DeptID FROM department 
+                             WHERE Location = (SELECT Location FROM department 
+                                                   WHERE Budget = (SELECT MAX(Budget) FROM department)))); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+Linda White 160000 
+Matthew Walker 135000 
+  
+Q6. Find the sales rep(s) whose total sales exceed the average total sales of employees working in the 
+same department as the top individual sale. 
+SELECT e.Name, SUM(s.SaleAmount) AS Total FROM employee e JOIN sales s ON e.EmpID = s.EmpID 
+GROUP BY e.Name 
+HAVING SUM(s.SaleAmount) > (SELECT AVG(t) FROM (SELECT SUM(s2.SaleAmount) AS t FROM sales s2 
+           JOIN employee e2 ON s2.EmpID = e2.EmpID 
+           WHERE e2.DeptID = (SELECT DeptID FROM employee 
+                              WHERE EmpID = (SELECT EmpID FROM sales 
+                                                WHERE SaleAmount = (SELECT MAX(SaleAmount) FROM sales))) 
+           GROUP BY s2.EmpID)); 
+Verified Result: 
+Name Total 
+Edward Clark 112000 
+Nancy Davis 142000 
+  
+Q7. Find departments whose total salary expenditure exceeds the budget of whichever project has the 
+earliest start date. 
+SELECT d.DeptName, SUM(e.Salary) AS TotalSalary FROM department d JOIN employee e ON d.DeptID = e.DeptID 
+GROUP BY d.DeptName 
+HAVING SUM(e.Salary) > (SELECT Budget FROM project 
+                     WHERE StartDate = (SELECT MIN(StartDate) FROM project)); 
+Verified Result: 
+DeptName TotalSalary 
+Engineering 1050000 
+Finance 405000 
+Marketing 433000 
+Sales 434000 
+  
+Q8. Find employees who work in the department that has the most employees assigned across all 
+projects (headcount on projects, grouped by department). 
+SELECT Name FROM employee 
+WHERE DeptID = (SELECT e2.DeptID FROM employee_project ep 
+             JOIN employee e2 ON ep.EmpID = e2.EmpID 
+             GROUP BY e2.DeptID 
+             ORDER BY COUNT(DISTINCT ep.EmpID) DESC LIMIT 1); 
+Verified Result: 
+Name 
+John Smith 
+Robert Lee 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Rachel Robinson 
+Matthew Walker 
+  
+Q9. Find the manager whose team's combined salary is the highest, and list all employees on that team. 
+SELECT Name, Salary FROM employee 
+WHERE ManagerID = (SELECT ManagerID FROM employee 
+                WHERE ManagerID IS NOT NULL 
+                GROUP BY ManagerID 
+                ORDER BY SUM(Salary) DESC LIMIT 1); 
+Verified Result: 
+Name Salary 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+  
+Q10. Find projects whose budget exceeds the average budget of projects belonging to whichever 
+department has the lowest total employee salary. 
+SELECT ProjectName, Budget FROM project 
+WHERE Budget > (SELECT AVG(Budget) FROM project 
+            WHERE DeptID = (SELECT DeptID FROM employee 
+                            GROUP BY DeptID 
+                            ORDER BY SUM(Salary) ASC LIMIT 1)); 
+Verified Result: 
+ProjectName Budget 
+Website Redesign 200000 
+Mobile App 350000 
+Ad Campaign Q1 120000 
+Audit 2021 80000 
+Sales Expansion 150000 
+Data Migration 250000 
+Brand Refresh 90000 
+  
+ 
+  
+5. Co-Related (Correlated) Subqueries 
+A correlated subquery references a column from the OUTER query 
+inside its WHERE clause, so it is conceptually re-evaluated once per 
+outer row (e.g. 'employees earning more than the average of their OWN 
+department'). This is the pattern behind classic 'top-N-per-group' queries. 
+General syntax: 
+SELECT columns FROM t1 outer 
+WHERE outer.col [operator] (SELECT AGG(col) FROM t2 inner 
+                         WHERE inner.group_col = outer.group_col); 
+  
+Basic Level  (10 questions) 
+Q1. Find employees who earn more than the average salary of their own department. 
+SELECT e1.Name, e1.Salary, e1.DeptID FROM employee e1 
+WHERE e1.Salary > (SELECT AVG(e2.Salary) FROM employee e2 WHERE e2.DeptID = e1.DeptID); 
+Verified Result: 
+Name Salary DeptID 
+John Smith 250000 2 
+Mary Johnson 150000 1 
+Robert Lee 180000 2 
+Susan Kim 140000 3 
+David Brown 120000 4 
+Linda White 160000 5 
+Sophia Lewis 99000 3 
+Matthew Walker 135000 2 
+  
+Q2. Find employees who earn less than the average salary of their own department. 
+SELECT e1.Name, e1.Salary FROM employee e1 
+WHERE e1.Salary < (SELECT AVG(e2.Salary) FROM employee e2 WHERE e2.DeptID = e1.DeptID); 
+Verified Result: 
+Name Salary 
+Tom Harris 70000 
+Nancy Davis 75000 
+Kevin Wilson 68000 
+Emily Clark 95000 
+Brian Moore 98000 
+Jessica Taylor 115000 
+Daniel Anderson 80000 
+Michelle Thomas 65000 
+(showing first 8 of 17 rows) 
+  
+Q3. Find employees who are the oldest within their own department. 
+SELECT e1.Name, e1.Age, e1.DeptID FROM employee e1 
+WHERE e1.Age = (SELECT MAX(e2.Age) FROM employee e2 WHERE e2.DeptID = e1.DeptID); 
+Verified Result: 
+Name Age DeptID 
+John Smith 55 2 
+Mary Johnson 48 1 
+Susan Kim 45 3 
+David Brown 42 4 
+Linda White 47 5 
+  
+Q4. Find employees who are the highest paid within their own department. 
+SELECT e1.Name, e1.Salary, e1.DeptID FROM employee e1 
+WHERE e1.Salary = (SELECT MAX(e2.Salary) FROM employee e2 WHERE e2.DeptID = e1.DeptID); 
+Verified Result: 
+Name Salary DeptID 
+John Smith 250000 2 
+Mary Johnson 150000 1 
+Susan Kim 140000 3 
+David Brown 120000 4 
+Linda White 160000 5 
+  
+Q5. Find projects whose budget is above the average budget of projects in the same department. 
+SELECT p1.ProjectName, p1.Budget FROM project p1 
+WHERE p1.Budget > (SELECT AVG(p2.Budget) FROM project p2 WHERE p2.DeptID = p1.DeptID); 
+Verified Result: 
+ProjectName Budget 
+Mobile App 350000 
+Ad Campaign Q1 120000 
+  
+Q6. Find employees who were hired earlier than the average hire date of their own department (by 
+comparing to the MIN hire date, since dates average poorly, compare each to their department's earliest 
+hire). 
+SELECT e1.Name, e1.HireDate FROM employee e1 
+WHERE e1.HireDate = (SELECT MIN(e2.HireDate) FROM employee e2 WHERE e2.DeptID = e1.DeptID); 
+Verified Result: 
+Name HireDate 
+John Smith 2010-01-15 
+Mary Johnson 2012-03-10 
+David Brown 2014-05-15 
+Linda White 2012-09-01 
+Sophia Lewis 2012-02-14 
+  
+Q7. Find sales that are above the average sale amount for their own region. 
+SELECT s1.SaleID, s1.SaleAmount, s1.Region FROM sales s1 
+WHERE s1.SaleAmount > (SELECT AVG(s2.SaleAmount) FROM sales s2 WHERE s2.Region = s1.Region); 
+Verified Result: 
+SaleID SaleAmount Region 
+2 22000 North 
+5 30000 South 
+9 16000 East 
+11 23000 West 
+13 21000 North 
+14 29000 South 
+15 15000 East 
+16 24000 West 
+(showing first 8 of 10 rows) 
+  
+Q8. Find employees who are the youngest within their own department. 
+SELECT e1.Name, e1.Age FROM employee e1 
+WHERE e1.Age = (SELECT MIN(e2.Age) FROM employee e2 WHERE e2.DeptID = e1.DeptID); 
+Verified Result: 
+Name Age 
+Amanda White 25 
+Laura Martin 30 
+George Martinez 29 
+Rachel Robinson 26 
+Edward Clark 27 
+  
+Q9. Find projects that have the smallest budget within their own department. 
+SELECT p1.ProjectName, p1.Budget FROM project p1 
+WHERE p1.Budget = (SELECT MIN(p2.Budget) FROM project p2 WHERE p2.DeptID = p1.DeptID); 
+Verified Result: 
+ProjectName Budget 
+Website Redesign 200000 
+Recruitment Drive 50000 
+Audit 2021 80000 
+Sales Expansion 150000 
+Brand Refresh 90000 
+  
+Q10. Find sales that are the largest single sale within their own region. 
+SELECT s1.SaleID, s1.SaleAmount, s1.Region FROM sales s1 
+WHERE s1.SaleAmount = (SELECT MAX(s2.SaleAmount) FROM sales s2 WHERE s2.Region = s1.Region); 
+Verified Result: 
+SaleID SaleAmount Region 
+2 22000 North 
+9 16000 East 
+18 31000 South 
+20 26000 West 
+  
+Intermediate Level  (10 questions) 
+Q1. Find employees who earn more than the average salary of employees who share the same manager. 
+SELECT e1.Name, e1.Salary FROM employee e1 
+WHERE e1.ManagerID IS NOT NULL 
+  AND e1.Salary > (SELECT AVG(e2.Salary) FROM employee e2 WHERE e2.ManagerID = e1.ManagerID); 
+Verified Result: 
+Name Salary 
+Robert Lee 180000 
+Linda White 160000 
+Nancy Davis 75000 
+Jessica Taylor 115000 
+Laura Martin 60000 
+Paul Thompson 85000 
+Karen Garcia 88000 
+Sophia Lewis 99000 
+(showing first 8 of 9 rows) 
+  
+Q2. Find employees who earn more than every other employee in their own department (i.e., the sole top 
+earner, correlated ALL-style comparison). 
+SELECT e1.Name, e1.Salary FROM employee e1 
+WHERE e1.Salary > (SELECT MAX(e2.Salary) FROM employee e2 
+                WHERE e2.DeptID = e1.DeptID AND e2.EmpID <> e1.EmpID); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+  
+Q3. Find employees whose salary is above their department's average AND who have logged at least one 
+project hour. 
+SELECT e1.Name FROM employee e1 
+WHERE e1.Salary > (SELECT AVG(e2.Salary) FROM employee e2 WHERE e2.DeptID = e1.DeptID) 
+  AND EXISTS (SELECT 1 FROM employee_project ep WHERE ep.EmpID = e1.EmpID); 
+Verified Result: 
+Name 
+Sophia Lewis 
+Matthew Walker 
+  
+Q4. Find projects that have an above-average number of hours logged compared to other projects in the 
+same department. 
+SELECT p1.ProjectName, 
+    (SELECT SUM(ep.HoursWorked) FROM employee_project ep WHERE ep.ProjectID = p1.ProjectID) AS Hours 
+FROM project p1 
+WHERE (SELECT SUM(ep1.HoursWorked) FROM employee_project ep1 WHERE ep1.ProjectID = p1.ProjectID) 
+   > (SELECT AVG(deptHours) FROM ( 
+         SELECT SUM(ep2.HoursWorked) AS deptHours FROM project p2 
+         JOIN employee_project ep2 ON p2.ProjectID = ep2.ProjectID 
+         WHERE p2.DeptID = p1.DeptID GROUP BY p2.ProjectID)); 
+Verified Result: 
+ProjectName Hours 
+Website Redesign 360 
+Mobile App 380 
+Ad Campaign Q1 210 
+  
+Q5. Find employees who earn more than the average salary of employees hired in the same year as 
+themselves. 
+SELECT e1.Name, e1.Salary FROM employee e1 
+WHERE e1.Salary > (SELECT AVG(e2.Salary) FROM employee e2 
+                WHERE substr(e2.HireDate,1,4) = substr(e1.HireDate,1,4)); 
+Verified Result: 
+Name Salary 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Kevin Wilson 68000 
+Emily Clark 95000 
+Brian Moore 98000 
+(showing first 8 of 12 rows) 
+  
+Q6. Find each manager's employee who earns the closest to (but not above) that manager's own salary. 
+SELECT e1.Name, e1.Salary, e1.ManagerID FROM employee e1 
+WHERE e1.Salary = (SELECT MAX(e2.Salary) FROM employee e2 
+                WHERE e2.ManagerID = e1.ManagerID 
+                  AND e2.Salary < (SELECT Salary FROM employee m WHERE m.EmpID = e1.ManagerID)); 
+Verified Result: 
+Name Salary ManagerID 
+Robert Lee 180000 1 
+Nancy Davis 75000 2 
+Laura Martin 60000 5 
+Karen Garcia 88000 6 
+Sophia Lewis 99000 4 
+Matthew Walker 135000 3 
+  
+Q7. Find sales reps whose average sale amount is above the overall average sale amount of their own 
+region. 
+SELECT DISTINCT e.Name FROM employee e JOIN sales s1 ON e.EmpID = s1.EmpID 
+WHERE (SELECT AVG(s2.SaleAmount) FROM sales s2 WHERE s2.EmpID = e.EmpID) 
+   > (SELECT AVG(s3.SaleAmount) FROM sales s3 WHERE s3.Region = s1.Region); 
+Verified Result: 
+(no rows returned) 
+  
+Q8. Find departments whose budget is greater than the combined salary of their own employees. 
+SELECT d.DeptName FROM department d 
+WHERE d.Budget > (SELECT SUM(e.Salary) FROM employee e WHERE e.DeptID = d.DeptID); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+  
+Q9. Find employees who log more hours on projects than the average hours logged by their own 
+department's colleagues. 
+SELECT e1.Name, SUM(ep1.HoursWorked) AS Hours FROM employee e1 
+JOIN employee_project ep1 ON e1.EmpID = ep1.EmpID 
+GROUP BY e1.Name, e1.DeptID, e1.EmpID 
+HAVING SUM(ep1.HoursWorked) > (SELECT AVG(h) FROM ( 
+  SELECT SUM(ep2.HoursWorked) AS h FROM employee e2 
+  JOIN employee_project ep2 ON e2.EmpID = ep2.EmpID 
+  WHERE e2.DeptID = e1.DeptID GROUP BY e2.EmpID)); 
+Verified Result: 
+Name Hours 
+Brian Moore 150 
+Chris Jackson 70 
+Jessica Taylor 200 
+Laura Martin 45 
+Matthew Walker 180 
+Michelle Thomas 80 
+Nancy Davis 90 
+Paul Thompson 60 
+(showing first 8 of 9 rows) 
+  
+Q10. Find employees who are paid more than the average salary of employees more junior to them 
+(hired later) in the same department. 
+SELECT e1.Name, e1.Salary FROM employee e1 
+WHERE e1.Salary > (SELECT AVG(e2.Salary) FROM employee e2 
+                WHERE e2.DeptID = e1.DeptID AND e2.HireDate > e1.HireDate); 
+Verified Result: 
+Name Salary 
+John Smith 250000 
+Mary Johnson 150000 
+Robert Lee 180000 
+Susan Kim 140000 
+David Brown 120000 
+Linda White 160000 
+Nancy Davis 75000 
+Emily Clark 95000 
+(showing first 8 of 16 rows) 
+  
+Advanced Level  (10 questions) 
+Q1. Find the highest-paid employee in each department (classic correlated 'top-N-per-group' pattern). 
+SELECT e1.Name, e1.DeptID, e1.Salary FROM employee e1 
+WHERE e1.Salary = (SELECT MAX(e2.Salary) FROM employee e2 WHERE e2.DeptID = e1.DeptID) 
+ORDER BY e1.DeptID; 
+Verified Result: 
+Name DeptID Salary 
+Mary Johnson 1 150000 
+John Smith 2 250000 
+Susan Kim 3 140000 
+David Brown 4 120000 
+Linda White 5 160000 
+  
+Q2. Find employees who earn more than their own manager. 
+SELECT e1.Name AS Employee, e1.Salary, m.Name AS Manager, m.Salary AS ManagerSalary 
+FROM employee e1 JOIN employee m ON e1.ManagerID = m.EmpID 
+WHERE e1.Salary > (SELECT Salary FROM employee WHERE EmpID = e1.ManagerID); 
+Verified Result: 
+(no rows returned) 
+  
+Q3. Find the second-highest paid employee within each department (correlated subquery counting how 
+many earn more). 
+SELECT e1.Name, e1.DeptID, e1.Salary FROM employee e1 
+WHERE 1 = (SELECT COUNT(*) FROM employee e2 
+        WHERE e2.DeptID = e1.DeptID AND e2.Salary > e1.Salary) 
+ORDER BY e1.DeptID; 
+Verified Result: 
+Name DeptID Salary 
+Nancy Davis 1 75000 
+Robert Lee 2 180000 
+Sophia Lewis 3 99000 
+Laura Martin 4 60000 
+Karen Garcia 5 88000 
+  
+Q4. Find employees whose salary ranks in the top 2 within their own department (correlated 
+COUNT-based ranking). 
+SELECT e1.Name, e1.DeptID, e1.Salary FROM employee e1 
+WHERE (SELECT COUNT(*) FROM employee e2 
+    WHERE e2.DeptID = e1.DeptID AND e2.Salary > e1.Salary) < 2 
+ORDER BY e1.DeptID, e1.Salary DESC; 
+Verified Result: 
+Name DeptID Salary 
+Mary Johnson 1 150000 
+Nancy Davis 1 75000 
+John Smith 2 250000 
+Robert Lee 2 180000 
+Susan Kim 3 140000 
+Sophia Lewis 3 99000 
+David Brown 4 120000 
+Laura Martin 4 60000 
+(showing first 8 of 10 rows) 
+  
+Q5. Find the project with the highest total logged hours within each department (correlated 
+top-per-group on aggregated data). 
+SELECT p1.ProjectName, p1.DeptID, 
+    (SELECT SUM(ep.HoursWorked) FROM employee_project ep WHERE ep.ProjectID = p1.ProjectID) AS Hours 
+FROM project p1 
+WHERE (SELECT SUM(ep1.HoursWorked) FROM employee_project ep1 WHERE ep1.ProjectID = p1.ProjectID) 
+ = (SELECT MAX(deptHours) FROM ( 
+       SELECT SUM(ep2.HoursWorked) AS deptHours FROM project p2 
+       JOIN employee_project ep2 ON p2.ProjectID = ep2.ProjectID 
+       WHERE p2.DeptID = p1.DeptID GROUP BY p2.ProjectID)); 
+Verified Result: 
+ProjectName DeptID Hours 
+Mobile App 2 380 
+Ad Campaign Q1 3 210 
+Recruitment Drive 4 85 
+Audit 2021 5 165 
+Sales Expansion 1 340 
+  
+Q6. Find managers who pay at least one employee more than they themselves earn. 
+SELECT DISTINCT m.Name AS Manager, m.Salary FROM employee m 
+WHERE EXISTS (SELECT 1 FROM employee e WHERE e.ManagerID = m.EmpID AND e.Salary > m.Salary); 
+Verified Result: 
+(no rows returned) 
+  
+Q7. Find, for each region, the sales rep with the single largest sale in that region. 
+SELECT e.Name, s1.SaleAmount, s1.Region FROM sales s1 JOIN employee e ON s1.EmpID = e.EmpID 
+WHERE s1.SaleAmount = (SELECT MAX(s2.SaleAmount) FROM sales s2 WHERE s2.Region = s1.Region); 
+Verified Result: 
+Name SaleAmount Region 
+Tom Harris 22000 North 
+Kevin Wilson 16000 East 
+Nancy Davis 31000 South 
+Edward Clark 26000 West 
+  
+Q8. Find employees whose salary is above average for BOTH their department and their manager's 
+team (double correlated condition). 
+SELECT e1.Name FROM employee e1 
+WHERE e1.Salary > (SELECT AVG(e2.Salary) FROM employee e2 WHERE e2.DeptID = e1.DeptID) 
+  AND e1.Salary > (SELECT AVG(e3.Salary) FROM employee e3 WHERE e3.ManagerID = e1.ManagerID); 
+Verified Result: 
+Name 
+Robert Lee 
+Linda White 
+Sophia Lewis 
+Matthew Walker 
+  
+Q9. Find employees whose total project hours exceed the average project hours of everyone else in the 
+company (excluding themselves). 
+SELECT e1.Name, SUM(ep1.HoursWorked) AS Hours FROM employee e1 
+JOIN employee_project ep1 ON e1.EmpID = ep1.EmpID 
+GROUP BY e1.EmpID, e1.Name 
+HAVING SUM(ep1.HoursWorked) > (SELECT AVG(h) FROM ( 
+ SELECT SUM(ep2.HoursWorked) AS h FROM employee_project ep2 
+ WHERE ep2.EmpID <> e1.EmpID GROUP BY ep2.EmpID)); 
+Verified Result: 
+Name Hours 
+Tom Harris 100 
+Nancy Davis 90 
+Emily Clark 120 
+Brian Moore 150 
+Jessica Taylor 200 
+Daniel Anderson 90 
+Rachel Robinson 100 
+Matthew Walker 180 
+  
+Q10. Find departments where the highest-paid employee earns more than double the department's own 
+average salary. 
+SELECT DISTINCT d.DeptName FROM department d JOIN employee e1 ON e1.DeptID = d.DeptID 
+WHERE e1.Salary = (SELECT MAX(e2.Salary) FROM employee e2 WHERE e2.DeptID = e1.DeptID) 
+  AND e1.Salary > 2 * (SELECT AVG(e3.Salary) FROM employee e3 WHERE e3.DeptID = e1.DeptID); 
+Verified Result: 
+(no rows returned) 
+  
+ 
+  
+6. EXISTS and NOT EXISTS 
+EXISTS returns TRUE if a (usually correlated) subquery returns at least 
+one row; NOT EXISTS returns TRUE when it returns none. The actual 
+columns selected inside don't matter — only row presence — which is 
+why SELECT 1 is the convention. 
+General syntax: 
+SELECT columns FROM t1 
+WHERE [NOT] EXISTS (SELECT 1 FROM t2 WHERE t2.fk = t1.pk [AND ...]); 
+  
+Basic Level  (10 questions) 
+Q1. Find departments that have at least one employee (EXISTS). 
+SELECT DeptName FROM department d 
+WHERE EXISTS (SELECT 1 FROM employee e WHERE e.DeptID = d.DeptID); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+Marketing 
+HR 
+Finance 
+  
+Q2. Find departments that have NO employees at all (NOT EXISTS). 
+SELECT DeptName FROM department d 
+WHERE NOT EXISTS (SELECT 1 FROM employee e WHERE e.DeptID = d.DeptID); 
+Verified Result: 
+(no rows returned) 
+  
+Q3. Find employees who have been assigned to at least one project (EXISTS). 
+SELECT Name FROM employee e 
+WHERE EXISTS (SELECT 1 FROM employee_project ep WHERE ep.EmpID = e.EmpID); 
+Verified Result: 
+Name 
+Tom Harris 
+Nancy Davis 
+Kevin Wilson 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Michelle Thomas 
+(showing first 8 of 19 rows) 
+  
+Q4. Find employees who have NEVER been assigned to any project (NOT EXISTS). 
+SELECT Name FROM employee e 
+WHERE NOT EXISTS (SELECT 1 FROM employee_project ep WHERE ep.EmpID = e.EmpID); 
+Verified Result: 
+Name 
+John Smith 
+Mary Johnson 
+Robert Lee 
+Susan Kim 
+David Brown 
+Linda White 
+  
+Q5. Find employees who have made at least one sale (EXISTS). 
+SELECT Name FROM employee e 
+WHERE EXISTS (SELECT 1 FROM sales s WHERE s.EmpID = e.EmpID); 
+Verified Result: 
+Name 
+Tom Harris 
+Nancy Davis 
+Kevin Wilson 
+Edward Clark 
+  
+Q6. Find employees who have NEVER made a sale (NOT EXISTS). 
+SELECT Name FROM employee e 
+WHERE NOT EXISTS (SELECT 1 FROM sales s WHERE s.EmpID = e.EmpID); 
+Verified Result: 
+Name 
+John Smith 
+Mary Johnson 
+Robert Lee 
+Susan Kim 
+David Brown 
+Linda White 
+Emily Clark 
+Brian Moore 
+(showing first 8 of 21 rows) 
+  
+Q7. Find departments that run at least one project (EXISTS). 
+SELECT DeptName FROM department d 
+WHERE EXISTS (SELECT 1 FROM project p WHERE p.DeptID = d.DeptID); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+Marketing 
+HR 
+Finance 
+  
+Q8. Find departments that run NO projects at all (NOT EXISTS). 
+SELECT DeptName FROM department d 
+WHERE NOT EXISTS (SELECT 1 FROM project p WHERE p.DeptID = d.DeptID); 
+Verified Result: 
+(no rows returned) 
+  
+Q9. Find employees who have at least one direct report (i.e., are a manager) (EXISTS). 
+SELECT Name FROM employee m 
+WHERE EXISTS (SELECT 1 FROM employee e WHERE e.ManagerID = m.EmpID); 
+Verified Result: 
+Name 
+John Smith 
+Mary Johnson 
+Robert Lee 
+Susan Kim 
+David Brown 
+Linda White 
+  
+Q10. Find employees who have no direct reports (are not anyone's manager) (NOT EXISTS). 
+SELECT Name FROM employee m 
+WHERE NOT EXISTS (SELECT 1 FROM employee e WHERE e.ManagerID = m.EmpID); 
+Verified Result: 
+Name 
+Tom Harris 
+Nancy Davis 
+Kevin Wilson 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Daniel Anderson 
+Michelle Thomas 
+(showing first 8 of 19 rows) 
+  
+Intermediate Level  (10 questions) 
+Q1. Find departments that have at least one employee earning over 100000 (EXISTS with condition). 
+SELECT DeptName FROM department d 
+WHERE EXISTS (SELECT 1 FROM employee e WHERE e.DeptID = d.DeptID AND e.Salary > 100000); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+Marketing 
+HR 
+Finance 
+  
+Q2. Find departments where NO employee earns over 100000 (NOT EXISTS with condition). 
+SELECT DeptName FROM department d 
+WHERE NOT EXISTS (SELECT 1 FROM employee e WHERE e.DeptID = d.DeptID AND e.Salary > 100000); 
+Verified Result: 
+(no rows returned) 
+  
+Q3. Find employees who worked on a project with a budget over 200000 (EXISTS across a join). 
+SELECT DISTINCT e.Name FROM employee e 
+WHERE EXISTS (SELECT 1 FROM employee_project ep JOIN project p ON ep.ProjectID = p.ProjectID 
+           WHERE ep.EmpID = e.EmpID AND p.Budget > 200000); 
+Verified Result: 
+Name 
+Jessica Taylor 
+Rachel Robinson 
+Matthew Walker 
+  
+Q4. Find employees who have never worked on any project with a budget over 200000 (NOT EXISTS 
+across a join). 
+SELECT DISTINCT e.Name FROM employee e 
+WHERE NOT EXISTS (SELECT 1 FROM employee_project ep JOIN project p ON ep.ProjectID = p.ProjectID 
+               WHERE ep.EmpID = e.EmpID AND p.Budget > 200000); 
+Verified Result: 
+Name 
+John Smith 
+Mary Johnson 
+Robert Lee 
+Susan Kim 
+David Brown 
+Linda White 
+Tom Harris 
+Nancy Davis 
+(showing first 8 of 22 rows) 
+  
+Q5. Find employees who made a sale of more than 25000 at least once (EXISTS with threshold). 
+SELECT Name FROM employee e 
+WHERE EXISTS (SELECT 1 FROM sales s WHERE s.EmpID = e.EmpID AND s.SaleAmount > 25000); 
+Verified Result: 
+Name 
+Nancy Davis 
+Edward Clark 
+  
+Q6. Find regions where every recorded sale is below 20000 (NOT EXISTS with threshold, region-level). 
+SELECT DISTINCT Region FROM sales s1 
+WHERE NOT EXISTS (SELECT 1 FROM sales s2 WHERE s2.Region = s1.Region AND s2.SaleAmount >= 20000); 
+Verified Result: 
+Region 
+East 
+  
+Q7. Find departments that have employees earning above their own department's average salary 
+(correlated EXISTS). 
+SELECT DISTINCT d.DeptName FROM department d 
+WHERE EXISTS (SELECT 1 FROM employee e 
+           WHERE e.DeptID = d.DeptID 
+             AND e.Salary > (SELECT AVG(e2.Salary) FROM employee e2 WHERE e2.DeptID = d.DeptID)); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+Marketing 
+HR 
+Finance 
+  
+Q8. Find employees who have logged more than 100 hours on at least one project (EXISTS with 
+threshold). 
+SELECT Name FROM employee e 
+WHERE EXISTS (SELECT 1 FROM employee_project ep WHERE ep.EmpID = e.EmpID AND ep.HoursWorked > 100); 
+Verified Result: 
+Name 
+Emily Clark 
+Brian Moore 
+Jessica Taylor 
+Matthew Walker 
+  
+Q9. Find projects for which NO assigned employee has logged more than 100 hours (NOT EXISTS with 
+threshold). 
+SELECT ProjectName FROM project p 
+WHERE NOT EXISTS (SELECT 1 FROM employee_project ep WHERE ep.ProjectID = p.ProjectID AND ep.HoursWorked 
+> 100); 
+Verified Result: 
+ProjectName 
+Ad Campaign Q1 
+Recruitment Drive 
+Audit 2021 
+Sales Expansion 
+Data Migration 
+Brand Refresh 
+  
+Q10. Find managers who have at least one direct report earning more than 90000 (EXISTS on 
+self-referencing table). 
+SELECT DISTINCT m.Name FROM employee m 
+WHERE EXISTS (SELECT 1 FROM employee e WHERE e.ManagerID = m.EmpID AND e.Salary > 90000); 
+Verified Result: 
+Name 
+John Smith 
+Robert Lee 
+Susan Kim 
+  
+Advanced Level  (10 questions) 
+Q1. Find departments where EVERY employee has been assigned to at least one project (nested NOT 
+EXISTS = 'for all'). 
+SELECT DeptName FROM department d 
+WHERE NOT EXISTS (SELECT 1 FROM employee e 
+               WHERE e.DeptID = d.DeptID 
+                 AND NOT EXISTS (SELECT 1 FROM employee_project ep WHERE ep.EmpID = e.EmpID)); 
+Verified Result: 
+(no rows returned) 
+  
+Q2. Find departments where at least one employee has NOT been assigned to any project (EXISTS 
+wrapping NOT EXISTS). 
+SELECT DISTINCT d.DeptName FROM department d 
+WHERE EXISTS (SELECT 1 FROM employee e 
+           WHERE e.DeptID = d.DeptID 
+             AND NOT EXISTS (SELECT 1 FROM employee_project ep WHERE ep.EmpID = e.EmpID)); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+Marketing 
+HR 
+Finance 
+  
+Q3. Find managers whose ENTIRE team earns more than the company average salary (NOT EXISTS = 
+no underperformer). 
+SELECT DISTINCT m.Name FROM employee m 
+WHERE EXISTS (SELECT 1 FROM employee e WHERE e.ManagerID = m.EmpID) 
+  AND NOT EXISTS (SELECT 1 FROM employee e 
+               WHERE e.ManagerID = m.EmpID 
+                 AND e.Salary <= (SELECT AVG(Salary) FROM employee)); 
+Verified Result: 
+Name 
+John Smith 
+  
+Q4. Find employees who work on every project that their own department runs (nested double NOT 
+EXISTS, per-employee 'for all'). 
+SELECT e.Name FROM employee e 
+WHERE NOT EXISTS (SELECT 1 FROM project p 
+               WHERE p.DeptID = e.DeptID 
+                 AND NOT EXISTS (SELECT 1 FROM employee_project ep 
+                                 WHERE ep.EmpID = e.EmpID AND ep.ProjectID = p.ProjectID)); 
+Verified Result: 
+Name 
+Tom Harris 
+Nancy Davis 
+Kevin Wilson 
+Steven Harris 
+Laura Martin 
+Paul Thompson 
+Karen Garcia 
+George Martinez 
+(showing first 8 of 9 rows) 
+  
+Q5. Find departments that run at least one project but have no project with a budget below 100000 
+(EXISTS + NOT EXISTS combined). 
+SELECT DeptName FROM department d 
+WHERE EXISTS (SELECT 1 FROM project p WHERE p.DeptID = d.DeptID) 
+  AND NOT EXISTS (SELECT 1 FROM project p WHERE p.DeptID = d.DeptID AND p.Budget < 100000); 
+Verified Result: 
+DeptName 
+Sales 
+Engineering 
+  
+Q6. Find sales regions where every sales rep active in that region has made at least 3 sales (nested NOT 
+EXISTS 'for all reps'). 
+SELECT DISTINCT s.Region FROM sales s 
+WHERE NOT EXISTS (SELECT 1 FROM sales s2 
+               WHERE s2.Region = s.Region 
+                 AND (SELECT COUNT(*) FROM sales s3 
+                      WHERE s3.EmpID = s2.EmpID AND s3.Region = s2.Region) < 3); 
+Verified Result: 
+Region 
+North 
+South 
+East 
+West 
+  
+Q7. Find employees who earn more than every one of their department colleagues who is assigned to a 
+project (EXISTS + correlated comparison). 
+SELECT e1.Name FROM employee e1 
+WHERE EXISTS (SELECT 1 FROM employee_project ep0 WHERE ep0.EmpID = e1.EmpID) 
+  AND NOT EXISTS (SELECT 1 FROM employee e2 
+               WHERE e2.DeptID = e1.DeptID 
+                 AND EXISTS (SELECT 1 FROM employee_project ep WHERE ep.EmpID = e2.EmpID) 
+                 AND e2.Salary > e1.Salary); 
+Verified Result: 
+Name 
+Nancy Davis 
+Laura Martin 
+Karen Garcia 
+Sophia Lewis 
+Matthew Walker 
+  
+Q8. Find departments where at least one project has a budget larger than every employee's salary in 
+that department (EXISTS + NOT EXISTS 'greater than all'). 
+SELECT DISTINCT d.DeptName FROM department d 
+WHERE EXISTS (SELECT 1 FROM project p 
+           WHERE p.DeptID = d.DeptID 
+             AND NOT EXISTS (SELECT 1 FROM employee e 
+                             WHERE e.DeptID = d.DeptID AND e.Salary >= p.Budget)); 
+Verified Result: 
+DeptName 
+Engineering 
+  
+Q9. Find employees who are the ONLY person in their department assigned to any project (no colleague 
+in the same department is also assigned). 
+SELECT e1.Name FROM employee e1 
+WHERE EXISTS (SELECT 1 FROM employee_project ep WHERE ep.EmpID = e1.EmpID) 
+  AND NOT EXISTS (SELECT 1 FROM employee e2 
+               JOIN employee_project ep2 ON e2.EmpID = ep2.EmpID 
+               WHERE e2.DeptID = e1.DeptID AND e2.EmpID <> e1.EmpID); 
+Verified Result: 
+(no rows returned) 
+Q10. Find managers all of whose direct reports have made at least one sale (nested NOT EXISTS 'for all 
+reports'). 
+SELECT DISTINCT m.Name FROM employee m 
+WHERE EXISTS (SELECT 1 FROM employee e WHERE e.ManagerID = m.EmpID) 
+AND NOT EXISTS (SELECT 1 FROM employee e 
+WHERE e.ManagerID = m.EmpID 
+AND NOT EXISTS (SELECT 1 FROM sales s WHERE s.EmpID = e.EmpID)); 
+Verified Result: 
+Name 
+Mary Johnson 
